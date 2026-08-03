@@ -1,0 +1,8 @@
+{
+  "name": "ArkFramework.Core.EditModeTests",
+  "rootNamespace": "ArkFramework.Tests",
+  "references": ["ArkFramework.Core", "ArkFramework.EventBus"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": false
+}

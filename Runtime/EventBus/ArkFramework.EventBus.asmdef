@@ -1,0 +1,5 @@
+{
+  "name": "ArkFramework.EventBus",
+  "rootNamespace": "ArkFramework",
+  "references": ["ArkFramework.Core"]
+}

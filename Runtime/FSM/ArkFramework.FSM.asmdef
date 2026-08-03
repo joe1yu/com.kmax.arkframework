@@ -1,0 +1,5 @@
+{
+  "name": "ArkFramework.FSM",
+  "rootNamespace": "ArkFramework",
+  "references": ["ArkFramework.Core"]
+}

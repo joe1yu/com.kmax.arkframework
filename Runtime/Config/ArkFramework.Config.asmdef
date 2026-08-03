@@ -1,0 +1,6 @@
+{
+  "name": "ArkFramework.Config",
+  "rootNamespace": "ArkFramework",
+  "references": ["ArkFramework.Core", "ArkFramework.Resource", "ArkFramework.EventBus"],
+  "precompiledReferences": ["Newtonsoft.Json.dll"]
+}

@@ -1,0 +1,5 @@
+{
+  "name": "ArkFramework.Samples",
+  "rootNamespace": "ArkFramework.Samples",
+  "references": ["ArkFramework.Core", "ArkFramework.EventBus", "ArkFramework.Resource", "ArkFramework.Pool", "ArkFramework.Config", "ArkFramework.Table", "ArkFramework.FSM", "ArkFramework.Procedure", "ArkFramework.Scene", "ArkFramework.UI", "ArkFramework.Audio", "ArkFramework.ActionKit", "UnityEngine.UI"]
+}

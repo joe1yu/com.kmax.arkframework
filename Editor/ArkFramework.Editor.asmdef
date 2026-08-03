@@ -1,0 +1,6 @@
+{
+  "name": "ArkFramework.Editor",
+  "rootNamespace": "ArkFramework.Editor",
+  "references": ["ArkFramework.Core", "ArkFramework.EventBus", "ArkFramework.Resource", "ArkFramework.Pool", "ArkFramework.Config", "ArkFramework.FSM", "ArkFramework.Procedure", "ArkFramework.Scene", "ArkFramework.UI", "ArkFramework.Audio", "ArkFramework.ActionKit", "ArkFramework.Table", "ArkFramework.Diagnostics"],
+  "includePlatforms": ["Editor"]
+}

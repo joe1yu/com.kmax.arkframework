@@ -1,0 +1,8 @@
+{
+  "name": "ArkFramework.ActionKit.EditModeTests",
+  "rootNamespace": "ArkFramework.Tests",
+  "references": ["ArkFramework.Core", "ArkFramework.ActionKit"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": false
+}

@@ -1,0 +1,43 @@
+# ArkFramework
+
+ArkFramework 是面向 Unity 2021.3 的模块化基础框架。包内包含运行时程序集与
+通用 Editor 工具，包 ID 为 `com.kmax.arkframework`。完整 EditMode/PlayMode
+验证测试随包保存在 `Tests` 目录中。
+
+## 安装
+
+- 从其他项目本地安装时，在 Package Manager 中选择
+  **Add package from disk**，并选择本目录的 `package.json`。
+- 从 Git 仓库安装时，可使用
+  `https://github.com/joe1yu/com.kmax.arkframework.git#main`。
+
+安装完成后，创建 `FrameworkProfile` 和需要的 `ModuleInstaller`，再把 Profile
+赋给场景中的 `FrameworkHost`。完整接入说明请参阅源码仓库根目录 README。
+
+## 示例
+
+在 Package Manager 中选择 ArkFramework，导入 **Complete Sample**。然后执行
+**ArkFramework > Samples > Rebuild Sample Content**，打开示例目录下的
+`Generated/Scenes/Bootstrap.unity` 并进入 Play Mode。
+
+也可以直接执行 **ArkFramework > Samples > Import Complete Sample** 完成导入；
+再次执行时会覆盖此前导入的同版本示例。
+
+完整示例覆盖十一个功能模块、Addressables 资源、CSV UI 配表、配置、
+场景/UI/音频切换、ActionKit Fluent API 和运行时诊断。生成器会根据导入位置自动解析示例根目录，
+因此不依赖固定的 `Assets` 路径。
+
+## 配表
+
+将带有 `#class`、`#fields` 和 `#types` 声明的 UTF-8 CSV 放入
+`Assets/StreamingAssets`。在 Project 窗口选中表格后执行
+**ArkFramework > Tables > Generate Selected Classes**；也可以执行
+**Generate All Classes** 批量生成。运行时把 `TableModuleInstaller` 加入 Profile，
+再通过 `ITableService.LoadAsync<T>("相对 StreamingAssets 的路径")` 加载。
+完整表格式与类型说明见 Package Manager 的 Documentation 页面。
+
+## 测试
+
+需要运行包内测试时，在目标项目 `Packages/manifest.json` 顶层的 `testables`
+数组中加入 `"com.kmax.arkframework"`。Sample 集成测试还要求先导入
+**Complete Sample**。

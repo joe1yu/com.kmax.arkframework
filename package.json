@@ -1,0 +1,31 @@
+{
+  "name": "com.kmax.arkframework",
+  "displayName": "ArkFramework",
+  "version": "0.1.0",
+  "unity": "2021.3",
+  "description": "模块化 Unity 基础框架，提供生命周期、IOC、事件、资源、对象池、配置、CSV 配表、FSM、流程、场景、UI、音频、ActionKit 与诊断能力。",
+  "keywords": [
+    "framework",
+    "architecture",
+    "ioc",
+    "addressables",
+    "actionkit",
+    "table",
+    "csv"
+  ],
+  "author": {
+    "name": "Joelyu"
+  },
+  "dependencies": {
+    "com.unity.addressables": "1.29.0",
+    "com.unity.nuget.newtonsoft-json": "3.2.2",
+    "com.unity.ugui": "1.0.0"
+  },
+  "samples": [
+    {
+      "displayName": "Complete Sample",
+      "description": "完整模块、Addressables、CSV UI 配表、ActionKit Fluent API 与页面流程示例。",
+      "path": "Samples~/Complete Sample"
+    }
+  ]
+}

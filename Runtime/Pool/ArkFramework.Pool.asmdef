@@ -1,0 +1,5 @@
+{
+  "name": "ArkFramework.Pool",
+  "rootNamespace": "ArkFramework",
+  "references": ["ArkFramework.Core", "ArkFramework.Resource"]
+}

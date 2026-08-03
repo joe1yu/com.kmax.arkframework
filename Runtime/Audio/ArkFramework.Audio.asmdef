@@ -1,0 +1,5 @@
+{
+  "name": "ArkFramework.Audio",
+  "rootNamespace": "ArkFramework",
+  "references": ["ArkFramework.Core", "ArkFramework.Resource", "ArkFramework.Pool"]
+}

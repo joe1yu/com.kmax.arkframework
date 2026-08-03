@@ -1,0 +1,5 @@
+{
+  "name": "ArkFramework.Resource",
+  "rootNamespace": "ArkFramework",
+  "references": ["ArkFramework.Core", "Unity.Addressables", "Unity.ResourceManager"]
+}

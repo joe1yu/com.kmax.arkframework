@@ -1,0 +1,7 @@
+{
+  "name": "ArkFramework.Services.PlayModeTests",
+  "rootNamespace": "ArkFramework.Tests",
+  "references": ["ArkFramework.Core", "ArkFramework.EventBus", "ArkFramework.Resource", "ArkFramework.Pool", "ArkFramework.Config", "ArkFramework.Scene", "Unity.Addressables", "Unity.ResourceManager", "Unity.Addressables.Editor"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "autoReferenced": false
+}

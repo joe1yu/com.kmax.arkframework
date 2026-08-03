@@ -1,0 +1,5 @@
+{
+  "name": "ArkFramework.Diagnostics",
+  "rootNamespace": "ArkFramework",
+  "references": ["ArkFramework.Core", "ArkFramework.EventBus", "ArkFramework.Resource", "ArkFramework.Pool", "ArkFramework.UI", "ArkFramework.Audio", "ArkFramework.Scene", "ArkFramework.Config", "ArkFramework.FSM", "ArkFramework.Procedure", "UnityEngine.UI"]
+}

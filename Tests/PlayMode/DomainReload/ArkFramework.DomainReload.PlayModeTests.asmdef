@@ -1,0 +1,16 @@
+{
+  "name": "ArkFramework.DomainReload.PlayModeTests",
+  "rootNamespace": "ArkFramework.Tests",
+  "references": [
+    "ArkFramework.Core",
+    "ArkFramework.EventBus",
+    "ArkFramework.Resource",
+    "ArkFramework.Pool",
+    "ArkFramework.FSM",
+    "ArkFramework.UI",
+    "ArkFramework.Procedure",
+    "Unity.ResourceManager"
+  ],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "autoReferenced": false
+}

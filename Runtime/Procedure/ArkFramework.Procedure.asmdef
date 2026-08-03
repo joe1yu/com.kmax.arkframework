@@ -1,0 +1,5 @@
+{
+  "name": "ArkFramework.Procedure",
+  "rootNamespace": "ArkFramework",
+  "references": ["ArkFramework.Core", "ArkFramework.FSM", "ArkFramework.Config", "ArkFramework.Scene", "ArkFramework.UI", "ArkFramework.Audio"]
+}

@@ -1,0 +1,10 @@
+{
+  "entries": [
+    {
+      "type": "ArkFramework.Samples.GameplayConfig, ArkFramework.Samples, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+      "key": "gameplay",
+      "version": "2",
+      "address": "config/gameplay-json"
+    }
+  ]
+}

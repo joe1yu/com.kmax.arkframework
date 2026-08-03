@@ -1,0 +1,5 @@
+{
+  "name": "ArkFramework.Core",
+  "rootNamespace": "ArkFramework",
+  "autoReferenced": true
+}

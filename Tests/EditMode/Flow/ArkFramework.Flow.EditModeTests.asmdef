@@ -1,0 +1,8 @@
+{
+  "name": "ArkFramework.Flow.EditModeTests",
+  "rootNamespace": "ArkFramework.Tests",
+  "references": ["ArkFramework.Core", "ArkFramework.FSM", "ArkFramework.Config", "ArkFramework.Scene", "ArkFramework.UI", "ArkFramework.Audio", "ArkFramework.Procedure"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": false
+}

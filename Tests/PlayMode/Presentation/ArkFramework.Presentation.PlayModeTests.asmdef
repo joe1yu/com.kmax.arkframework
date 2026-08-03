@@ -1,0 +1,7 @@
+{
+  "name": "ArkFramework.Presentation.PlayModeTests",
+  "rootNamespace": "ArkFramework.Tests",
+  "references": ["ArkFramework.Core", "ArkFramework.EventBus", "ArkFramework.Resource", "ArkFramework.Pool", "ArkFramework.Scene", "ArkFramework.UI", "ArkFramework.Audio", "UnityEngine.UI", "Unity.Addressables", "Unity.ResourceManager", "Unity.Addressables.Editor"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "autoReferenced": false
+}

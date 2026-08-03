@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f4ecd12305e9094684f4e7de1f7ede3, type: 3}
+  m_Name: ArkFrameworkSampleProfile
+  m_EditorClassIdentifier: 
+  _installers:
+  - {fileID: 11400000, guid: db58a461c9ccfa34ba12b6288deeff59, type: 2}
+  - {fileID: 11400000, guid: 50c3c831d9392eb40aa03c9dcca5151d, type: 2}
+  - {fileID: 11400000, guid: 1b2c4605ab0797346bd7b331bd84d776, type: 2}
+  - {fileID: 11400000, guid: 39ec04efb3ffc7a439e24f20930e6ecf, type: 2}
+  - {fileID: 11400000, guid: fbfdc9dc8a42c43409934cf00975108c, type: 2}
+  - {fileID: 11400000, guid: e57dcf9e6b427b84799a981f0dae1dfc, type: 2}
+  - {fileID: 11400000, guid: 2363fa6fde85e7149bdc77f8772cb00d, type: 2}
+  - {fileID: 11400000, guid: 5c5d0d5a5af0e554c8efaee3f8f872a8, type: 2}
+  - {fileID: 11400000, guid: 8952089872c8a8a4d89e1736cac54a38, type: 2}
+  - {fileID: 11400000, guid: 082ad81fd25c43941aa05b72cd9de56a, type: 2}
+  - {fileID: 11400000, guid: 79c0d1e602dbe1d4e9e26030a0ffba00, type: 2}
