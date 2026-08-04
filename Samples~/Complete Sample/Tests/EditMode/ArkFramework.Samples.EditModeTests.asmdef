@@ -1,7 +1,7 @@
 {
   "name": "ArkFramework.Samples.EditModeTests",
   "rootNamespace": "ArkFramework.Editor.Tests",
-  "references": ["ArkFramework.Core", "ArkFramework.EventBus", "ArkFramework.Resource", "ArkFramework.Pool", "ArkFramework.Config", "ArkFramework.Table", "ArkFramework.FSM", "ArkFramework.Scene", "ArkFramework.UI", "ArkFramework.Audio", "ArkFramework.ActionKit", "ArkFramework.Procedure", "ArkFramework.Diagnostics", "ArkFramework.Samples", "ArkFramework.Editor", "ArkFramework.Samples.Editor", "UnityEngine.UI", "Unity.Addressables", "Unity.ResourceManager", "Unity.Addressables.Editor"],
+  "references": ["ArkFramework.Core", "ArkFramework.Platform", "ArkFramework.EventBus", "ArkFramework.Resource", "ArkFramework.Pool", "ArkFramework.Config", "ArkFramework.Table", "ArkFramework.FSM", "ArkFramework.Scene", "ArkFramework.UI", "ArkFramework.Audio", "ArkFramework.ActionKit", "ArkFramework.Procedure", "ArkFramework.Diagnostics", "ArkFramework.Samples", "ArkFramework.Editor", "ArkFramework.Samples.Editor", "UnityEngine.UI", "Unity.Addressables", "Unity.ResourceManager", "Unity.Addressables.Editor"],
   "optionalUnityReferences": ["TestAssemblies"],
   "includePlatforms": ["Editor"],
   "autoReferenced": false

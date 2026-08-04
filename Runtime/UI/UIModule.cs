@@ -48,6 +48,13 @@ namespace ArkFramework
             var pool = context.Services.Resolve<IGameObjectPool>();
             var events = context.Services.Resolve<IEventBus>();
             var root = UIRoot.Create();
+            if (context.Services.TryResolve<IPlatformService>(
+                    out var platform))
+            {
+                // UIRoot 会动态创建分层 Canvas，立即交给平台配置专属 Raycaster。
+                platform.RefreshCanvases();
+            }
+
             var service = new UIService(
                 resources,
                 pool,

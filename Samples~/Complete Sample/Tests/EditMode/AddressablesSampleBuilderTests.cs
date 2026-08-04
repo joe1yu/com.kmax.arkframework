@@ -9,6 +9,7 @@ using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Settings;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 
 namespace ArkFramework.Editor.Tests
@@ -27,12 +28,15 @@ namespace ArkFramework.Editor.Tests
             GeneratedRoot + "/Prefabs/GameplayHudWindow.prefab";
         private static readonly string LoadingPrefabPath =
             GeneratedRoot + "/Prefabs/LoadingWindow.prefab";
+        private static readonly string PlatformPrefabPath =
+            GeneratedRoot + "/Prefabs/PlatformRoot.prefab";
         private const string UITablePath =
             "Assets/StreamingAssets/ArkFrameworkSample/UI.csv";
 
         private static readonly string[] ModuleIds =
         {
             "EventBus",
+            "Platform",
             "Resource",
             "Pool",
             "Config",
@@ -48,6 +52,7 @@ namespace ArkFramework.Editor.Tests
         private static readonly Type[] InstallerTypes =
         {
             typeof(EventBusModuleInstaller),
+            typeof(PlatformModuleInstaller),
             typeof(ResourceModuleInstaller),
             typeof(PoolModuleInstaller),
             typeof(ConfigModuleInstaller),
@@ -62,6 +67,7 @@ namespace ArkFramework.Editor.Tests
 
         private static readonly string[][] ModuleDependencies =
         {
+            Array.Empty<string>(),
             Array.Empty<string>(),
             Array.Empty<string>(),
             new[] { BuiltInModuleIds.Resource },
@@ -123,6 +129,7 @@ namespace ArkFramework.Editor.Tests
             GeneratedRoot + "/Config/gameplay.json",
             ManifestPath,
             GeneratedRoot + "/Installers/EventBusInstaller.asset",
+            GeneratedRoot + "/Installers/PlatformInstaller.asset",
             GeneratedRoot + "/Installers/ResourceInstaller.asset",
             GeneratedRoot + "/Installers/PoolInstaller.asset",
             GeneratedRoot + "/Installers/ConfigInstaller.asset",
@@ -137,6 +144,7 @@ namespace ArkFramework.Editor.Tests
             MainMenuPrefabPath,
             GameplayHudPrefabPath,
             LoadingPrefabPath,
+            PlatformPrefabPath,
             SampleAssetPaths.BootstrapScenePath,
             SampleAssetPaths.MainMenuScenePath,
             SampleAssetPaths.GameplayScenePath,
@@ -279,6 +287,28 @@ namespace ArkFramework.Editor.Tests
         }
 
         [Test]
+        public void PlatformPrefabDefinesCanvasAndEventSystem()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                PlatformPrefabPath);
+            var installer =
+                AssetDatabase.LoadAssetAtPath<PlatformModuleInstaller>(
+                    GeneratedRoot +
+                    "/Installers/PlatformInstaller.asset");
+
+            Assert.That(prefab, Is.Not.Null);
+            Assert.That(
+                prefab.GetComponentsInChildren<Canvas>(true),
+                Has.Length.EqualTo(1));
+            Assert.That(
+                prefab.GetComponentsInChildren<EventSystem>(true),
+                Has.Length.EqualTo(1));
+            Assert.That(installer, Is.Not.Null);
+            Assert.That(installer.PlatformPrefab, Is.SameAs(prefab));
+            Assert.That(installer.DontDestroyOnLoad, Is.True);
+        }
+
+        [Test]
         public void UITableContainsThreeIdAddressedWindows()
         {
             Assert.That(File.Exists(UITablePath), Is.True);
@@ -336,7 +366,7 @@ namespace ArkFramework.Editor.Tests
                     .And.EqualTo(ExpectedAddresses.Length));
             Assert.That(
                 _second.ProfileInstallerCount,
-                Is.EqualTo(_first.ProfileInstallerCount).And.EqualTo(11));
+                Is.EqualTo(_first.ProfileInstallerCount).And.EqualTo(12));
             Assert.That(
                 _second.SampleBuildSceneCount,
                 Is.EqualTo(_first.SampleBuildSceneCount).And.EqualTo(1));

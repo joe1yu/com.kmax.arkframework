@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _installers:
   - {fileID: 11400000, guid: db58a461c9ccfa34ba12b6288deeff59, type: 2}
+  - {fileID: 11400000, guid: 3da6a8602b13c1b47afc8f04dea6152a, type: 2}
   - {fileID: 11400000, guid: 50c3c831d9392eb40aa03c9dcca5151d, type: 2}
   - {fileID: 11400000, guid: 1b2c4605ab0797346bd7b331bd84d776, type: 2}
   - {fileID: 11400000, guid: 39ec04efb3ffc7a439e24f20930e6ecf, type: 2}

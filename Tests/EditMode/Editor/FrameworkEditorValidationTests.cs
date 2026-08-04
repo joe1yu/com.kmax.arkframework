@@ -317,8 +317,8 @@ namespace ArkFramework.Editor.Tests
             var sorted = ModuleGraph.Sort(descriptors);
 
             Assert.That(validation.IsValid, Is.True);
-            Assert.That(descriptors, Has.Count.EqualTo(11));
-            Assert.That(sorted, Has.Count.EqualTo(11));
+            Assert.That(descriptors, Has.Count.EqualTo(12));
+            Assert.That(sorted, Has.Count.EqualTo(12));
             Assert.That(
                 installers.SelectMany(installer => installer.ServiceTypes)
                     .Distinct()
@@ -400,6 +400,13 @@ namespace ArkFramework.Editor.Tests
                     Array.Empty<string>(),
                     new[] { typeof(IEventBus) },
                     "ArkFramework/Modules/Event Bus"),
+                new InstallerExpectation(
+                    typeof(PlatformModuleInstaller),
+                    typeof(PlatformModule),
+                    BuiltInModuleIds.Platform,
+                    Array.Empty<string>(),
+                    new[] { typeof(IPlatformService) },
+                    "ArkFramework/Modules/Platform"),
                 new InstallerExpectation(
                     typeof(ResourceModuleInstaller),
                     typeof(ResourceModule),

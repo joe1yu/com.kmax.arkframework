@@ -1,0 +1,7 @@
+{
+  "name": "ArkFramework.Platform.PlayModeTests",
+  "rootNamespace": "ArkFramework.Tests",
+  "references": ["ArkFramework.Core", "ArkFramework.Platform", "ArkFramework.UI", "UnityEngine.UI"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "autoReferenced": false
+}

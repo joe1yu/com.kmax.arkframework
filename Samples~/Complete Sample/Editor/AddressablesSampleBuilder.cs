@@ -12,6 +12,7 @@ using UnityEditor.AddressableAssets.Settings;
 using UnityEditor.AddressableAssets.Settings.GroupSchemas;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
@@ -51,6 +52,8 @@ namespace ArkFramework.Editor
             PrefabRoot + "/GameplayHudWindow.prefab";
         private static readonly string LoadingPrefabPath =
             PrefabRoot + "/LoadingWindow.prefab";
+        private static readonly string PlatformPrefabPath =
+            PrefabRoot + "/PlatformRoot.prefab";
         private const string UITablePath =
             TableRoot + "/UI.csv";
 
@@ -116,6 +119,7 @@ namespace ArkFramework.Editor
                 CreateOrUpdateMainMenuPrefab();
                 CreateOrUpdateGameplayHudPrefab();
                 CreateOrUpdateLoadingPrefab();
+                CreateOrUpdatePlatformPrefab();
                 var installers = CreateOrUpdateInstallers();
                 var profile = CreateOrUpdateProfile(installers);
                 CreateOrUpdateBootstrapScene(profile);
@@ -531,6 +535,40 @@ namespace ArkFramework.Editor
             }
         }
 
+        private static void CreateOrUpdatePlatformPrefab()
+        {
+            var root = new GameObject("ArkFramework Sample Platform");
+            try
+            {
+                var canvasObject = new GameObject(
+                    "Platform Canvas",
+                    typeof(RectTransform),
+                    typeof(Canvas),
+                    typeof(CanvasScaler),
+                    typeof(GraphicRaycaster));
+                canvasObject.transform.SetParent(root.transform, false);
+                Stretch(canvasObject.GetComponent<RectTransform>());
+                var canvas = canvasObject.GetComponent<Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvas.sortingOrder = -1000;
+                var scaler = canvasObject.GetComponent<CanvasScaler>();
+                scaler.uiScaleMode =
+                    CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                scaler.referenceResolution = new Vector2(1920f, 1080f);
+
+                var eventSystem = new GameObject(
+                    "Platform EventSystem",
+                    typeof(EventSystem),
+                    typeof(StandaloneInputModule));
+                eventSystem.transform.SetParent(root.transform, false);
+                SavePrefab(root, PlatformPrefabPath);
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
         private static GameObject CreateWindowRoot<TWindow>(
             string name,
             Color background,
@@ -641,9 +679,10 @@ namespace ArkFramework.Editor
         private static List<ModuleInstaller>
             CreateOrUpdateInstallers()
         {
-            var installers = new List<ModuleInstaller>(11)
+            var installers = new List<ModuleInstaller>(12)
             {
                 CreateOrUpdateInstaller<EventBusModuleInstaller>("EventBus"),
+                CreateOrUpdatePlatformInstaller(),
                 CreateOrUpdateInstaller<ResourceModuleInstaller>("Resource"),
                 CreateOrUpdateInstaller<PoolModuleInstaller>("Pool")
             };
@@ -673,6 +712,20 @@ namespace ArkFramework.Editor
             installers.Add(
                 CreateOrUpdateInstaller<SampleModuleInstaller>("Procedure"));
             return installers;
+        }
+
+        private static PlatformModuleInstaller
+            CreateOrUpdatePlatformInstaller()
+        {
+            var installer =
+                CreateOrUpdateInstaller<PlatformModuleInstaller>("Platform");
+            var serialized = new SerializedObject(installer);
+            serialized.FindProperty("_platformPrefab").objectReferenceValue =
+                AssetDatabase.LoadAssetAtPath<GameObject>(PlatformPrefabPath);
+            serialized.FindProperty("_dontDestroyOnLoad").boolValue = true;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(installer);
+            return installer;
         }
 
         private static T CreateOrUpdateInstaller<T>(string assetName)

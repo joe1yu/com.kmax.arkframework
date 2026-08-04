@@ -23,9 +23,21 @@ ArkFramework 是面向 Unity 2021.3 的模块化基础框架。包内包含运�
 也可以直接执行 **ArkFramework > Samples > Import Complete Sample** 完成导入；
 再次执行时会覆盖此前导入的同版本示例。
 
-完整示例覆盖十一个功能模块、Addressables 资源、CSV UI 配表、配置、
+完整示例覆盖十二个功能模块、Addressables 资源、CSV UI 配表、配置、
 场景/UI/音频切换、ActionKit Fluent API 和运行时诊断。生成器会根据导入位置自动解析示例根目录，
 因此不依赖固定的 `Assets` 路径。
+
+## 平台初始化
+
+创建 `PlatformModuleInstaller` 并指定平台预制体。模块启动时会实例化该预制体，
+初始化其中的 UI 与 `EventSystem`；未提供 `EventSystem` 时会自动创建一个默认实现。
+建议把 Platform Installer 放在 UI Installer 之前。
+
+平台 SDK 需要自定义 UI 射线检测器时，在平台预制体上添加一个继承
+`PlatformGraphicRaycasterConfigurator` 的组件，并让 `RaycasterType` 返回 SDK 的
+`BaseRaycaster` 类型。平台模块会为当前以及后续创建的每个 `Canvas` 自动添加该
+组件。默认会替换标准 `GraphicRaycaster`；需要两者共存时重写
+`ReplacesStandardGraphicRaycaster` 并返回 `false`。
 
 ## 配表
 

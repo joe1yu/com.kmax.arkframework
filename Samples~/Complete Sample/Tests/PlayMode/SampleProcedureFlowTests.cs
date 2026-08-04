@@ -154,6 +154,8 @@ namespace ArkFramework.Samples.Tests
             Assert.That(_host, Is.Not.Null);
             var runtime = _host.Runtime;
             Assert.That(runtime, Is.Not.Null);
+            var platform =
+                runtime.Services.Resolve<IPlatformService>();
             var procedures =
                 runtime.Services.Resolve<IProcedureService>();
             var flow = runtime.Services.Resolve<ISampleFlow>();
@@ -166,6 +168,10 @@ namespace ArkFramework.Samples.Tests
             var resources =
                 runtime.Services.Resolve<IResourceService>();
             var pool = runtime.Services.Resolve<IGameObjectPool>();
+
+            Assert.That(platform.Root, Is.Not.Null);
+            Assert.That(platform.EventSystem, Is.Not.Null);
+            Assert.That(platform.Canvases, Is.Not.Empty);
 
             Assert.That(
                 tables.TryGetLoaded<SampleUIRow>(

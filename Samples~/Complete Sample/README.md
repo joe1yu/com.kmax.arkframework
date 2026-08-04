@@ -1,7 +1,8 @@
 # ArkFramework Complete Sample
 
-该示例演示 ArkFramework 的完整启动与页面切换流程，包含 EventBus、Resource、
-Pool、Config、Table、FSM、Scene、UI、Audio、ActionKit、Procedure 和运行时诊断。
+该示例演示 ArkFramework 的完整启动与页面切换流程，包含 Platform、EventBus、
+Resource、Pool、Config、Table、FSM、Scene、UI、Audio、ActionKit、Procedure 和
+运行时诊断。
 
 ## 运行
 
@@ -15,6 +16,11 @@ Pool、Config、Table、FSM、Scene、UI、Audio、ActionKit、Procedure 和运�
 
 页面按钮通过 ActionKit Fluent API 在下一帧启动异步 Procedure 切换；加载窗口、
 Addressables 场景/UI、背景音乐和配置读取均由框架模块协同完成。
+
+生成的 `PlatformRoot.prefab` 定义平台级 Canvas 和唯一的 `EventSystem`，并由
+`PlatformModuleInstaller` 在框架启动时实例化。项目接入具体平台 SDK 时，可以在
+该预制体上挂载 `PlatformGraphicRaycasterConfigurator` 子类，为所有 UI Canvas
+自动安装平台专用 Graphic Raycaster。
 
 三个窗口的 Addressables 地址、层级、窗口模式和交互开关都来自 `UI.csv`。
 `SampleUIService.OpenAsync(tableId)` 先按配表主键查询，再调用对应窗口类型，

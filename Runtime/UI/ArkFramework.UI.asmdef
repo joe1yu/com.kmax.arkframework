@@ -1,5 +1,5 @@
 {
   "name": "ArkFramework.UI",
   "rootNamespace": "ArkFramework",
-  "references": ["ArkFramework.Core", "ArkFramework.Resource", "ArkFramework.Pool", "ArkFramework.EventBus", "UnityEngine.UI"]
+  "references": ["ArkFramework.Core", "ArkFramework.Resource", "ArkFramework.Pool", "ArkFramework.EventBus", "ArkFramework.Platform", "UnityEngine.UI"]
 }

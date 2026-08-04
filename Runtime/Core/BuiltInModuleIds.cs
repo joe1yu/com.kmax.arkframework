@@ -3,6 +3,7 @@ namespace ArkFramework
     public static class BuiltInModuleIds
     {
         public const string EventBus = "EventBus";
+        public const string Platform = "Platform";
         public const string Resource = "Resource";
         public const string Pool = "Pool";
         public const string Config = "Config";

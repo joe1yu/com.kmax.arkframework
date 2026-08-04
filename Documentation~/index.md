@@ -20,6 +20,36 @@
 Manager 导入 API；导入完成后仍需执行一次重建命令，以同步 Addressables 和
 Build Settings。
 
+## Platform 平台初始化
+
+1. 创建平台预制体，并按平台需要放入 UI、`Canvas` 和唯一的 `EventSystem`。
+2. 创建 `PlatformModuleInstaller`，把平台预制体赋给 `Platform Prefab`。
+3. 将 Platform Installer 放入 `FrameworkProfile`，通常位于 UI Installer 之前。
+
+如果平台预制体没有 `EventSystem`，模块会复用场景中唯一的运行时
+`EventSystem`；两者都不存在时会创建带 `StandaloneInputModule` 的默认对象。
+如果同时存在多个 `EventSystem`，初始化会明确失败，避免输入被重复派发。
+
+平台 SDK 提供专用 Graphic Raycaster 时，可在平台预制体上添加自定义配置器：
+
+```csharp
+using System;
+using ArkFramework;
+
+public sealed class VendorRaycasterConfigurator
+    : PlatformGraphicRaycasterConfigurator
+{
+    public override Type RaycasterType => typeof(VendorGraphicRaycaster);
+}
+```
+
+`VendorGraphicRaycaster` 必须继承 `BaseRaycaster`。模块会扫描当前以及运行时新建的
+全部 `Canvas`，并保证每个 Canvas 只添加一个目标组件。配置器默认移除标准
+`GraphicRaycaster`；重写 `ReplacesStandardGraphicRaycaster` 可让两者共存，
+重写 `AppliesTo` 可只处理指定 Canvas，重写 `ConfigureRaycaster` 可写入平台参数。
+运行时也可以解析 `IPlatformService`，读取平台根对象、`EventSystem`、Canvas 列表，
+或主动调用 `RefreshCanvases()`。
+
 ## 包测试
 
 核心 EditMode 与 PlayMode 测试位于包内 `Tests` 目录。目标项目需要在
