@@ -161,6 +161,7 @@ namespace ArkFramework.Samples.Tests
             var flow = runtime.Services.Resolve<ISampleFlow>();
             var config = runtime.Services.Resolve<IConfigService>();
             var scenes = runtime.Services.Resolve<ISceneService>();
+            var rig = runtime.Services.Resolve<IRigService>();
             var ui = runtime.Services.Resolve<IUIService>();
             var sampleUI = runtime.Services.Resolve<ISampleUIService>();
             var tables = runtime.Services.Resolve<ITableService>();
@@ -195,6 +196,7 @@ namespace ArkFramework.Samples.Tests
                 scenes,
                 ui,
                 audio);
+            AssertRigSynchronized(rig, scenes);
             var mainMenu = (MainMenuWindow)flow.ActiveWindow;
             Assert.That(mainMenu.PlayButton, Is.Not.Null);
             Assert.That(
@@ -219,6 +221,7 @@ namespace ArkFramework.Samples.Tests
                 scenes,
                 ui,
                 audio);
+            AssertRigSynchronized(rig, scenes);
             var hud = (GameplayHudWindow)flow.ActiveWindow;
             Assert.That(hud.BackButton, Is.Not.Null);
             hud.BackButton.onClick.Invoke();
@@ -233,6 +236,7 @@ namespace ArkFramework.Samples.Tests
                 scenes,
                 ui,
                 audio);
+            AssertRigSynchronized(rig, scenes);
 
             EnsureCleanupScene();
             var stop = _host.StopRuntimeAsync().AsTask();
@@ -294,6 +298,9 @@ namespace ArkFramework.Samples.Tests
             Assert.That(
                 scenes.ActiveSceneKey.Value,
                 Is.EqualTo(SampleContent.MainMenuSceneAddress));
+            Assert.That(
+                scenes.ActiveSceneId,
+                Is.EqualTo(SampleContent.MainMenuSceneId));
             Assert.That(scenes.ActiveSceneName, Is.EqualTo("MainMenu"));
 
             var payload =
@@ -341,6 +348,9 @@ namespace ArkFramework.Samples.Tests
             Assert.That(
                 scenes.ActiveSceneKey.Value,
                 Is.EqualTo(SampleContent.GameplaySceneAddress));
+            Assert.That(
+                scenes.ActiveSceneId,
+                Is.EqualTo(SampleContent.GameplaySceneId));
             Assert.That(scenes.ActiveSceneName, Is.EqualTo("Gameplay"));
             AssertStableWindow(
                 ui,
@@ -348,6 +358,46 @@ namespace ArkFramework.Samples.Tests
             Assert.That(
                 audio.Diagnostics.CurrentMusicKey?.Value,
                 Is.EqualTo(SampleContent.GameplayMusicAddress));
+        }
+
+        private static void AssertRigSynchronized(
+            IRigService rig,
+            ISceneService scenes)
+        {
+            Assert.That(rig.ActiveRigId, Is.EqualTo(SampleContent.MainRigId));
+            Assert.That(rig.LastSyncResult.Succeeded, Is.True);
+            Assert.That(
+                rig.LastSyncResult.SceneName,
+                Is.EqualTo(scenes.ActiveSceneName));
+            Assert.That(rig.LastSyncResult.MatchedCameraCount, Is.EqualTo(1));
+            Assert.That(
+                rig.LastSyncResult.SynchronizedPoseCount,
+                Is.EqualTo(1));
+            Assert.That(
+                rig.LastSyncResult.SynchronizedCameraCount,
+                Is.EqualTo(1));
+            Assert.That(
+                rig.LastSyncResult.DisabledSceneCameraCount,
+                Is.EqualTo(1));
+
+            var bindings = SceneManager.GetActiveScene()
+                .GetRootGameObjects()
+                .SelectMany(root =>
+                    root.GetComponentsInChildren<SceneCameraBinding>(true))
+                .ToArray();
+            Assert.That(bindings, Has.Length.EqualTo(1));
+            Assert.That(bindings[0].Camera.enabled, Is.False);
+
+            var target = rig.ActiveRig
+                .GetComponentsInChildren<RigCameraSlot>(true)
+                .Single(slot =>
+                    slot.Id == SampleContent.MainCameraSlotId)
+                .Camera;
+            Assert.That(target.enabled, Is.True);
+            Assert.That(target.orthographic, Is.True);
+            Assert.That(
+                target.backgroundColor,
+                Is.EqualTo(bindings[0].Camera.backgroundColor));
         }
 
         private static void AssertStableWindow(

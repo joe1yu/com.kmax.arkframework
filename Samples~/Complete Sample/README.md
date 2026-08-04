@@ -1,6 +1,6 @@
 # ArkFramework Complete Sample
 
-该示例演示 ArkFramework 的完整启动与页面切换流程，包含 Platform、EventBus、
+该示例演示 ArkFramework 的完整启动与页面切换流程，包含 Platform、Rig、EventBus、
 Resource、Pool、Config、Table、FSM、Scene、UI、Audio、ActionKit、Procedure 和
 运行时诊断。
 
@@ -9,7 +9,7 @@ Resource、Pool、Config、Table、FSM、Scene、UI、Audio、ActionKit、Proced
 1. 如果示例来自 Package Manager，先点击 **Import**。
 2. 执行 **ArkFramework > Samples > Rebuild Sample Content**。该命令会在当前
    示例目录的 `Generated` 下生成 Profile、Installer、场景、UI、音频与配置，
-   同时生成 `Assets/StreamingAssets/ArkFrameworkSample/UI.csv`，并注册
+   同时生成 `Assets/StreamingAssets/ArkFrameworkSample/UI.csv` 和 `Scenes.csv`，并注册
    Addressables 和 Build Settings。
 3. 打开 `Generated/Scenes/Bootstrap.unity`。
 4. 进入 Play Mode，通过主菜单和 Gameplay HUD 的按钮往返切换。
@@ -22,6 +22,11 @@ Addressables 场景/UI、背景音乐和配置读取均由框架模块协同完�
 预制体自身内容，框架不会管理。项目接入具体平台 SDK 时，可以在该预制体上挂载
 `PlatformGraphicRaycasterConfigurator` 子类，为预制体内部 Canvas 自动安装平台
 专用 Graphic Raycaster。
+
+平台预制体还定义了带 `Main` 相机槽位的 `Main` Rig。两个业务场景的相机通过
+`SceneCameraBinding` 映射到该槽位；Procedure 使用 Scene 配表 ID 切换场景，切换
+完成后按表项同步相机位置和 Camera 参数，并禁用场景相机，实际渲染由平台 Rig
+相机接管。
 
 三个窗口的 Addressables 地址、根节点 ID、层级、窗口模式和交互开关都来自 `UI.csv`。
 `SampleUIService.OpenAsync(tableId)` 先按配表主键查询，再调用对应窗口类型，

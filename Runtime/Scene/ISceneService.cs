@@ -10,6 +10,14 @@ namespace ArkFramework
             SceneRequest request,
             CancellationToken token = default);
 
+        ValueTask LoadByIdAsync(
+            string id,
+            CancellationToken token = default);
+
+        bool TryGetDefinition(string id, out SceneTableRow definition);
+
+        string ActiveSceneId { get; }
+
         ResourceKey ActiveSceneKey { get; }
 
         string ActiveSceneName { get; }

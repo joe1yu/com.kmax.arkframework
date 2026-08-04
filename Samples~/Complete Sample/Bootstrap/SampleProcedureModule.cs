@@ -15,6 +15,7 @@ namespace ArkFramework.Samples
                     BuiltInModuleIds.Config,
                     BuiltInModuleIds.Table,
                     BuiltInModuleIds.Scene,
+                    BuiltInModuleIds.Rig,
                     BuiltInModuleIds.UI,
                     BuiltInModuleIds.Audio,
                     BuiltInModuleIds.ActionKit

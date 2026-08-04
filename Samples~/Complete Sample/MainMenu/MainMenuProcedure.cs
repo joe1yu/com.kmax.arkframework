@@ -41,12 +41,8 @@ namespace ArkFramework.Samples
                 loading = await sampleUI.OpenAsync(
                     SampleContent.LoadingWindowId,
                     token: token);
-                await scenes.LoadAsync(
-                    new SceneRequest(
-                        new ResourceKey(
-                            SampleContent.MainMenuSceneAddress),
-                        SceneLoadMode.Single,
-                        activateOnLoad: true),
+                await scenes.LoadByIdAsync(
+                    SampleContent.MainMenuSceneId,
                     token);
                 await ui.CloseAsync(loading, token);
                 loading = null;

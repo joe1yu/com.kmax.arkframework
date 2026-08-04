@@ -59,6 +59,31 @@ Render Mode、相机、排序或变换。配置器默认移除标准
 运行时也可以解析 `IPlatformService`，通过 `UIRoots`、`TryGetUIRoot` 或
 `GetUIRoot` 读取实例中的命名根节点。
 
+## Rig 与场景相机同步
+
+1. 在平台预制体中创建一个或多个 `CameraRig`，设置唯一 ID 和默认 Rig。
+2. 在每个受控相机上添加 `RigCameraSlot` 并设置槽位 ID；同一 Rig 支持多个槽位。
+3. 在场景相机上添加 `SceneCameraBinding`，设置目标 Rig、槽位，并按需标记一个
+   `Pose Source`。
+4. 创建 `RigModuleInstaller`，与 Platform、EventBus、Scene 和 Table Installer
+   一起加入 Profile。
+
+`CameraRig.PoseRoot` 决定位置同步实际移动的节点，普通相机可使用 Rig 根节点，XR
+项目可指向 XR Origin。基础 Rig 模块不引用 XR SDK；XR 包可以实现并注册
+`IRigComponentSynchronizer`，为特定组件提供专用复制逻辑。
+
+场景资源可以放入 StreamingAssets 中的 `SceneTableRow` 配表，并在
+`SceneModuleInstaller.SceneTablePath` 配置相对路径。之后按 ID 切换：
+
+```csharp
+ISceneService scenes = runtime.Services.Resolve<ISceneService>();
+await scenes.LoadByIdAsync("Game.Main");
+```
+
+每行可独立控制是否同步 Rig 位置、`Camera.CopyFrom` 参数、指定完整类型名的组件，
+以及同步后是否禁用匹配的场景相机。清空 `RigId` 并关闭全部同步开关，即可只进行
+场景切换。
+
 ## 包测试
 
 核心 EditMode 与 PlayMode 测试位于包内 `Tests` 目录。目标项目需要在
@@ -118,6 +143,7 @@ Render Mode、相机、排序或变换。配置器默认移除标准
 的 StreamingAssets 由 `UnityWebRequest` 读取，本地文件平台使用 UTF-8 文件读取。
 
 Complete Sample 重建时会生成
-`Assets/StreamingAssets/ArkFrameworkSample/UI.csv`。示例通过 `Id` 主键读取窗口
+`Assets/StreamingAssets/ArkFrameworkSample/UI.csv` 和 `Scenes.csv`。示例通过
+`Id` 主键读取窗口
 Addressables 地址、层级、模式和交互参数，调用
 `ISampleUIService.OpenAsync(tableId)` 打开窗口，可作为业务 UI 配表接入参考。

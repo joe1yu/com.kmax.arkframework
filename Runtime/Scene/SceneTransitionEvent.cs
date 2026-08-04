@@ -26,6 +26,10 @@ namespace ArkFramework
 
         public ResourceKey Key => Request.Key;
 
+        public string SceneId => Request.Id;
+
+        public SceneCameraSyncOptions CameraSync => Request.CameraSync;
+
         public SceneLoadMode Mode => Request.Mode;
 
         public SceneTransitionStage Stage { get; }

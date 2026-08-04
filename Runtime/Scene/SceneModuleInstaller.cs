@@ -14,10 +14,16 @@ namespace ArkFramework
                 new[]
                 {
                     BuiltInModuleIds.Resource,
-                    BuiltInModuleIds.EventBus
+                    BuiltInModuleIds.EventBus,
+                    BuiltInModuleIds.Table
                 });
         private static readonly IReadOnlyCollection<Type> Services =
             Array.AsReadOnly(new[] { typeof(ISceneService) });
+
+        [SerializeField]
+        private string _sceneTablePath;
+
+        public string SceneTablePath => _sceneTablePath;
 
         public override string ModuleId => BuiltInModuleIds.Scene;
 
@@ -28,7 +34,7 @@ namespace ArkFramework
 
         public override IFrameworkModule CreateModule()
         {
-            return new SceneModule();
+            return new SceneModule(_sceneTablePath);
         }
     }
 }

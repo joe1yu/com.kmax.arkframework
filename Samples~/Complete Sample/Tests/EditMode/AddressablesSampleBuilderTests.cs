@@ -32,11 +32,14 @@ namespace ArkFramework.Editor.Tests
             GeneratedRoot + "/Prefabs/PlatformRoot.prefab";
         private const string UITablePath =
             "Assets/StreamingAssets/ArkFrameworkSample/UI.csv";
+        private const string SceneTablePath =
+            "Assets/StreamingAssets/ArkFrameworkSample/Scenes.csv";
 
         private static readonly string[] ModuleIds =
         {
             "EventBus",
             "Platform",
+            "Rig",
             "Resource",
             "Pool",
             "Config",
@@ -53,6 +56,7 @@ namespace ArkFramework.Editor.Tests
         {
             typeof(EventBusModuleInstaller),
             typeof(PlatformModuleInstaller),
+            typeof(RigModuleInstaller),
             typeof(ResourceModuleInstaller),
             typeof(PoolModuleInstaller),
             typeof(ConfigModuleInstaller),
@@ -69,6 +73,11 @@ namespace ArkFramework.Editor.Tests
         {
             Array.Empty<string>(),
             Array.Empty<string>(),
+            new[]
+            {
+                BuiltInModuleIds.Platform,
+                BuiltInModuleIds.EventBus
+            },
             Array.Empty<string>(),
             new[] { BuiltInModuleIds.Resource },
             new[]
@@ -81,7 +90,8 @@ namespace ArkFramework.Editor.Tests
             new[]
             {
                 BuiltInModuleIds.Resource,
-                BuiltInModuleIds.EventBus
+                BuiltInModuleIds.EventBus,
+                BuiltInModuleIds.Table
             },
             new[]
             {
@@ -101,6 +111,7 @@ namespace ArkFramework.Editor.Tests
                 BuiltInModuleIds.Config,
                 BuiltInModuleIds.Table,
                 BuiltInModuleIds.Scene,
+                BuiltInModuleIds.Rig,
                 BuiltInModuleIds.UI,
                 BuiltInModuleIds.Audio,
                 BuiltInModuleIds.ActionKit
@@ -130,6 +141,7 @@ namespace ArkFramework.Editor.Tests
             ManifestPath,
             GeneratedRoot + "/Installers/EventBusInstaller.asset",
             GeneratedRoot + "/Installers/PlatformInstaller.asset",
+            GeneratedRoot + "/Installers/RigInstaller.asset",
             GeneratedRoot + "/Installers/ResourceInstaller.asset",
             GeneratedRoot + "/Installers/PoolInstaller.asset",
             GeneratedRoot + "/Installers/ConfigInstaller.asset",
@@ -148,7 +160,8 @@ namespace ArkFramework.Editor.Tests
             SampleAssetPaths.BootstrapScenePath,
             SampleAssetPaths.MainMenuScenePath,
             SampleAssetPaths.GameplayScenePath,
-            UITablePath
+            UITablePath,
+            SceneTablePath
         };
 
         private Snapshot _first;
@@ -180,7 +193,7 @@ namespace ArkFramework.Editor.Tests
         }
 
         [Test]
-        public void ProfileHasElevenOrderedModulesAndValidatesCleanly()
+        public void ProfileHasThirteenOrderedModulesAndValidatesCleanly()
         {
             var profile =
                 AssetDatabase.LoadAssetAtPath<FrameworkProfile>(
@@ -315,6 +328,15 @@ namespace ArkFramework.Editor.Tests
             Assert.That(installer, Is.Not.Null);
             Assert.That(installer.PlatformPrefab, Is.SameAs(prefab));
             Assert.That(installer.DontDestroyOnLoad, Is.True);
+            var rigs = prefab.GetComponentsInChildren<CameraRig>(true);
+            Assert.That(rigs, Has.Length.EqualTo(1));
+            Assert.That(rigs[0].Id, Is.EqualTo(SampleContent.MainRigId));
+            Assert.That(rigs[0].ActiveByDefault, Is.True);
+            var slots = rigs[0].GetComponentsInChildren<RigCameraSlot>(true);
+            Assert.That(slots, Has.Length.EqualTo(1));
+            Assert.That(
+                slots[0].Id,
+                Is.EqualTo(SampleContent.MainCameraSlotId));
         }
 
         [Test]
@@ -354,6 +376,45 @@ namespace ArkFramework.Editor.Tests
         }
 
         [Test]
+        public void SceneTableContainsTwoIdAddressedScenesAndRigPolicies()
+        {
+            Assert.That(File.Exists(SceneTablePath), Is.True);
+            var document = CsvTableDocument.Parse(
+                File.ReadAllText(SceneTablePath),
+                SceneTablePath);
+
+            Assert.That(
+                document.Schema.TargetTypeName,
+                Is.EqualTo(typeof(SceneTableRow).FullName));
+            Assert.That(document.Schema.KeyColumnName, Is.EqualTo("Id"));
+            Assert.That(document.Rows, Has.Count.EqualTo(2));
+            Assert.That(
+                document.Rows.Select(row => row.Cells[0]),
+                Is.EqualTo(
+                    new[]
+                    {
+                        SampleContent.MainMenuSceneId,
+                        SampleContent.GameplaySceneId
+                    }));
+            Assert.That(
+                document.Rows.Select(row => row.Cells[4]),
+                Is.All.EqualTo(SampleContent.MainRigId));
+            Assert.That(
+                document.Rows.Select(row => row.Cells[5]),
+                Is.All.EqualTo("true"));
+            Assert.That(
+                document.Rows.Select(row => row.Cells[9]),
+                Is.All.EqualTo("true"));
+
+            var installer =
+                AssetDatabase.LoadAssetAtPath<SceneModuleInstaller>(
+                    GeneratedRoot +
+                    "/Installers/SceneInstaller.asset");
+            Assert.That(installer.SceneTablePath, Is.EqualTo(
+                SampleContent.SceneTablePath));
+        }
+
+        [Test]
         public void GeneratedAudioClipsContainPersistedSamples()
         {
             AssertPersistedAudioClip(
@@ -378,7 +439,7 @@ namespace ArkFramework.Editor.Tests
                     .And.EqualTo(ExpectedAddresses.Length));
             Assert.That(
                 _second.ProfileInstallerCount,
-                Is.EqualTo(_first.ProfileInstallerCount).And.EqualTo(12));
+                Is.EqualTo(_first.ProfileInstallerCount).And.EqualTo(13));
             Assert.That(
                 _second.SampleBuildSceneCount,
                 Is.EqualTo(_first.SampleBuildSceneCount).And.EqualTo(1));

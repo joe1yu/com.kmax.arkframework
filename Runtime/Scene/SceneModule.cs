@@ -12,16 +12,25 @@ namespace ArkFramework
                 new[]
                 {
                     BuiltInModuleIds.Resource,
-                    BuiltInModuleIds.EventBus
+                    BuiltInModuleIds.EventBus,
+                    BuiltInModuleIds.Table
                 });
+        private readonly string _sceneTablePath;
         private SceneService _service;
         private bool _disposed;
+
+        public SceneModule(string sceneTablePath = null)
+        {
+            _sceneTablePath = string.IsNullOrWhiteSpace(sceneTablePath)
+                ? string.Empty
+                : sceneTablePath.Trim();
+        }
 
         public string Id => BuiltInModuleIds.Scene;
 
         public IReadOnlyCollection<string> Dependencies => SceneDependencies;
 
-        public ValueTask InitializeAsync(
+        public async ValueTask InitializeAsync(
             ModuleContext context,
             CancellationToken token)
         {
@@ -45,13 +54,22 @@ namespace ArkFramework
             var resources =
                 context.Services.Resolve<ISceneResourceLoader>();
             var events = context.Services.Resolve<IEventBus>();
-            var service = new SceneService(
+            TableData<SceneTableRow> catalog = null;
+            if (!string.IsNullOrEmpty(_sceneTablePath))
+            {
+                catalog = await context.Services.Resolve<ITableService>()
+                    .LoadAsync<SceneTableRow>(
+                        _sceneTablePath,
+                        token: token);
+            }
+
+            var service = SceneService.CreateWithCatalog(
                 new ResourceSceneBackend(resources),
-                events);
+                events,
+                catalog);
             context.ModuleScope.Own(service);
             context.ModuleScope.RegisterInstance<ISceneService>(service);
             _service = service;
-            return default;
         }
 
         public ValueTask StartAsync(CancellationToken token)

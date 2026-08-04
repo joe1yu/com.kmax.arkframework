@@ -11,6 +11,8 @@
     "addressables",
     "actionkit",
     "platform",
+    "rig",
+    "camera",
     "table",
     "csv"
   ],

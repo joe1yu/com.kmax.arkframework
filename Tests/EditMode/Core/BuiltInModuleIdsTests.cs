@@ -6,6 +6,7 @@ namespace ArkFramework.Tests
     {
         [TestCase(BuiltInModuleIds.EventBus, "EventBus")]
         [TestCase(BuiltInModuleIds.Platform, "Platform")]
+        [TestCase(BuiltInModuleIds.Rig, "Rig")]
         [TestCase(BuiltInModuleIds.Resource, "Resource")]
         [TestCase(BuiltInModuleIds.Pool, "Pool")]
         [TestCase(BuiltInModuleIds.Config, "Config")]

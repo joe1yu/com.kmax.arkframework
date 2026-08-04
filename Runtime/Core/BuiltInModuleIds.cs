@@ -4,6 +4,7 @@ namespace ArkFramework
     {
         public const string EventBus = "EventBus";
         public const string Platform = "Platform";
+        public const string Rig = "Rig";
         public const string Resource = "Resource";
         public const string Pool = "Pool";
         public const string Config = "Config";

@@ -11,10 +11,11 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3f4ecd12305e9094684f4e7de1f7ede3, type: 3}
   m_Name: ArkFrameworkSampleProfile
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   _installers:
   - {fileID: 11400000, guid: db58a461c9ccfa34ba12b6288deeff59, type: 2}
   - {fileID: 11400000, guid: 3da6a8602b13c1b47afc8f04dea6152a, type: 2}
+  - {fileID: 11400000, guid: c966a1b6461e9a04598ac4f005555e2d, type: 2}
   - {fileID: 11400000, guid: 50c3c831d9392eb40aa03c9dcca5151d, type: 2}
   - {fileID: 11400000, guid: 1b2c4605ab0797346bd7b331bd84d776, type: 2}
   - {fileID: 11400000, guid: 39ec04efb3ffc7a439e24f20930e6ecf, type: 2}

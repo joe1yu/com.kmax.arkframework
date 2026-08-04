@@ -10,6 +10,7 @@ namespace ArkFramework
         private readonly object _sync = new object();
         private readonly ISceneBackend _backend;
         private readonly IEventBus _events;
+        private readonly TableData<SceneTableRow> _catalog;
         private readonly Action _afterQueuedStopCancellation;
         private readonly Queue<QueuedRequest> _queue =
             new Queue<QueuedRequest>();
@@ -20,6 +21,7 @@ namespace ArkFramework
         private readonly AsyncLocal<CallbackFrame> _callbackFrame =
             new AsyncLocal<CallbackFrame>();
         private ISceneBackendScene _activeScene;
+        private string _activeSceneId;
         private ResourceKey _activeSceneKey;
         private string _activeSceneName;
         private SceneTransitionStage? _currentStage;
@@ -35,15 +37,76 @@ namespace ArkFramework
             ISceneBackend backend,
             IEventBus events,
             Action afterQueuedStopCancellation = null)
+            : this(
+                backend,
+                events,
+                null,
+                afterQueuedStopCancellation)
+        {
+        }
+
+        private SceneService(
+            ISceneBackend backend,
+            IEventBus events,
+            TableData<SceneTableRow> catalog,
+            Action afterQueuedStopCancellation)
         {
             _backend = backend ??
                 throw new ArgumentNullException(nameof(backend));
             _events = events ??
                 throw new ArgumentNullException(nameof(events));
+            _catalog = catalog;
             _afterQueuedStopCancellation = afterQueuedStopCancellation;
             _activeScene = _backend.CaptureActiveScene();
             _activeSceneKey = _activeScene.Key;
             _activeSceneName = _activeScene.Name;
+        }
+
+        internal static SceneService CreateWithCatalog(
+            ISceneBackend backend,
+            IEventBus events,
+            TableData<SceneTableRow> catalog)
+        {
+            ValidateCatalog(catalog);
+            return new SceneService(
+                backend,
+                events,
+                catalog,
+                null);
+        }
+
+        private static void ValidateCatalog(TableData<SceneTableRow> catalog)
+        {
+            if (catalog == null)
+            {
+                return;
+            }
+
+            if (!catalog.HasKey ||
+                !string.Equals(
+                    catalog.Schema.KeyColumnName,
+                    nameof(SceneTableRow.Id),
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "The scene table must declare '#key,Id'.");
+            }
+
+            for (var index = 0; index < catalog.Rows.Count; index++)
+            {
+                catalog.Rows[index].CreateRequest();
+            }
+        }
+
+        public string ActiveSceneId
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    return _activeSceneId ?? string.Empty;
+                }
+            }
         }
 
         public ResourceKey ActiveSceneKey
@@ -151,6 +214,39 @@ namespace ArkFramework
             }
 
             return new ValueTask(queued.Completion.Task);
+        }
+
+        public ValueTask LoadByIdAsync(
+            string id,
+            CancellationToken token = default)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentException(
+                    "A scene table ID is required.",
+                    nameof(id));
+            }
+
+            if (_catalog == null)
+            {
+                throw new InvalidOperationException(
+                    "SceneModuleInstaller does not define a scene table path.");
+            }
+
+            return LoadAsync(_catalog.Get(id.Trim()).CreateRequest(), token);
+        }
+
+        public bool TryGetDefinition(
+            string id,
+            out SceneTableRow definition)
+        {
+            if (_catalog == null || string.IsNullOrWhiteSpace(id))
+            {
+                definition = null;
+                return false;
+            }
+
+            return _catalog.TryGet(id.Trim(), out definition);
         }
 
         public ValueTask StopAsync(CancellationToken token = default)
@@ -327,6 +423,7 @@ namespace ArkFramework
                         lock (_sync)
                         {
                             _activeScene = target;
+                            _activeSceneId = queued.Request.Id;
                             _activeSceneKey = target.Key;
                             _activeSceneName = target.Name;
                         }

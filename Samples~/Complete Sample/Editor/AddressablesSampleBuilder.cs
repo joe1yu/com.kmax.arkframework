@@ -56,6 +56,8 @@ namespace ArkFramework.Editor
             PrefabRoot + "/PlatformRoot.prefab";
         private const string UITablePath =
             TableRoot + "/UI.csv";
+        private const string SceneTablePath =
+            TableRoot + "/Scenes.csv";
 
         private static readonly string[] LegacyBuildScenePaths =
         {
@@ -116,6 +118,7 @@ namespace ArkFramework.Editor
                 CreateOrUpdateConfig();
                 WriteConfigJson();
                 WriteUITable();
+                WriteSceneTable();
                 CreateOrUpdateMainMenuPrefab();
                 CreateOrUpdateGameplayHudPrefab();
                 CreateOrUpdateLoadingPrefab();
@@ -441,6 +444,33 @@ namespace ArkFramework.Editor
                 ImportAssetOptions.ForceSynchronousImport);
         }
 
+        private static void WriteSceneTable()
+        {
+            var content =
+                "#class,ArkFramework.SceneTableRow\n" +
+                "#fields,Id,Address,Mode,ActivateOnLoad,RigId," +
+                "SyncRigPose,SyncCameraSettings,SyncComponents," +
+                "ComponentTypes,DisableSceneCameras\n" +
+                "#types,string,string,SceneLoadMode,bool,string,bool,bool," +
+                "bool,string[],bool\n" +
+                "#key,Id\n" +
+                "#comments,场景ID,Addressables地址,加载模式,加载后激活," +
+                "目标Rig,同步位置,同步Camera参数,同步指定组件," +
+                "组件完整类型名,禁用场景相机\n" +
+                "," + SampleContent.MainMenuSceneId + "," +
+                SampleContent.MainMenuSceneAddress +
+                ",Single,true," + SampleContent.MainRigId +
+                ",true,true,false,,true\n" +
+                "," + SampleContent.GameplaySceneId + "," +
+                SampleContent.GameplaySceneAddress +
+                ",Single,true," + SampleContent.MainRigId +
+                ",true,true,false,,true\n";
+            WriteTextIfChanged(SceneTablePath, content);
+            AssetDatabase.ImportAsset(
+                SceneTablePath,
+                ImportAssetOptions.ForceSynchronousImport);
+        }
+
         private static string EscapeJson(string value)
         {
             return value.Replace("\\", "\\\\").Replace("\"", "\\\"");
@@ -580,6 +610,31 @@ namespace ArkFramework.Editor
                     serializedRoot.ApplyModifiedPropertiesWithoutUndo();
                 }
 
+                var rigObject = new GameObject(
+                    "Main Camera Rig",
+                    typeof(CameraRig));
+                rigObject.transform.SetParent(root.transform, false);
+                var serializedRig = new SerializedObject(
+                    rigObject.GetComponent<CameraRig>());
+                serializedRig.FindProperty("_id").stringValue =
+                    SampleContent.MainRigId;
+                serializedRig.FindProperty("_activeByDefault").boolValue =
+                    true;
+                serializedRig.FindProperty("_poseRoot").objectReferenceValue =
+                    rigObject.transform;
+                serializedRig.ApplyModifiedPropertiesWithoutUndo();
+
+                var cameraObject = new GameObject(
+                    "Main Camera",
+                    typeof(Camera),
+                    typeof(RigCameraSlot));
+                cameraObject.transform.SetParent(rigObject.transform, false);
+                var serializedSlot = new SerializedObject(
+                    cameraObject.GetComponent<RigCameraSlot>());
+                serializedSlot.FindProperty("_id").stringValue =
+                    SampleContent.MainCameraSlotId;
+                serializedSlot.ApplyModifiedPropertiesWithoutUndo();
+
                 var eventSystem = new GameObject(
                     "Platform EventSystem",
                     typeof(EventSystem),
@@ -703,10 +758,11 @@ namespace ArkFramework.Editor
         private static List<ModuleInstaller>
             CreateOrUpdateInstallers()
         {
-            var installers = new List<ModuleInstaller>(12)
+            var installers = new List<ModuleInstaller>(13)
             {
                 CreateOrUpdateInstaller<EventBusModuleInstaller>("EventBus"),
                 CreateOrUpdatePlatformInstaller(),
+                CreateOrUpdateInstaller<RigModuleInstaller>("Rig"),
                 CreateOrUpdateInstaller<ResourceModuleInstaller>("Resource"),
                 CreateOrUpdateInstaller<PoolModuleInstaller>("Pool")
             };
@@ -724,8 +780,7 @@ namespace ArkFramework.Editor
                 CreateOrUpdateInstaller<TableModuleInstaller>("Table"));
             installers.Add(
                 CreateOrUpdateInstaller<FsmModuleInstaller>("FSM"));
-            installers.Add(
-                CreateOrUpdateInstaller<SceneModuleInstaller>("Scene"));
+            installers.Add(CreateOrUpdateSceneInstaller());
             installers.Add(
                 CreateOrUpdateInstaller<UIModuleInstaller>("UI"));
             installers.Add(
@@ -747,6 +802,18 @@ namespace ArkFramework.Editor
             serialized.FindProperty("_platformPrefab").objectReferenceValue =
                 AssetDatabase.LoadAssetAtPath<GameObject>(PlatformPrefabPath);
             serialized.FindProperty("_dontDestroyOnLoad").boolValue = true;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(installer);
+            return installer;
+        }
+
+        private static SceneModuleInstaller CreateOrUpdateSceneInstaller()
+        {
+            var installer =
+                CreateOrUpdateInstaller<SceneModuleInstaller>("Scene");
+            var serialized = new SerializedObject(installer);
+            serialized.FindProperty("_sceneTablePath").stringValue =
+                SampleContent.SceneTablePath;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(installer);
             return installer;
@@ -993,11 +1060,20 @@ namespace ArkFramework.Editor
         {
             var cameraObject = new GameObject(
                 "Sample Camera",
-                typeof(Camera));
+                typeof(Camera),
+                typeof(SceneCameraBinding));
             var camera = cameraObject.GetComponent<Camera>();
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.backgroundColor = background;
             camera.orthographic = true;
+            var serializedBinding = new SerializedObject(
+                cameraObject.GetComponent<SceneCameraBinding>());
+            serializedBinding.FindProperty("_rigId").stringValue =
+                SampleContent.MainRigId;
+            serializedBinding.FindProperty("_slotId").stringValue =
+                SampleContent.MainCameraSlotId;
+            serializedBinding.FindProperty("_poseSource").boolValue = true;
+            serializedBinding.ApplyModifiedPropertiesWithoutUndo();
 
             var canvasObject = new GameObject(
                 rootName,
@@ -1037,9 +1113,26 @@ namespace ArkFramework.Editor
                 StringComparer.Ordinal);
         }
 
+        private static IReadOnlyDictionary<string, string>
+            ReadSceneAddresses()
+        {
+            var document = CsvTableDocument.Parse(
+                File.ReadAllText(SceneTablePath),
+                SceneTablePath);
+            var idColumn = document.Schema.Columns.Single(
+                column => column.Name == "Id");
+            var addressColumn = document.Schema.Columns.Single(
+                column => column.Name == "Address");
+            return document.Rows.ToDictionary(
+                row => row.Cells[idColumn.Index],
+                row => row.Cells[addressColumn.Index],
+                StringComparer.Ordinal);
+        }
+
         private static void UpdateAddressables()
         {
             var uiAddresses = ReadUIAddresses();
+            var sceneAddresses = ReadSceneAddresses();
             var settings =
                 AddressableAssetSettingsDefaultObject.GetSettings(true);
             if (settings == null)
@@ -1105,12 +1198,12 @@ namespace ArkFramework.Editor
                 settings,
                 group,
                 SampleAssetPaths.MainMenuScenePath,
-                SampleContent.MainMenuSceneAddress);
+                sceneAddresses[SampleContent.MainMenuSceneId]);
             AddOrMoveEntry(
                 settings,
                 group,
                 SampleAssetPaths.GameplayScenePath,
-                SampleContent.GameplaySceneAddress);
+                sceneAddresses[SampleContent.GameplaySceneId]);
             AddOrMoveEntry(
                 settings,
                 group,

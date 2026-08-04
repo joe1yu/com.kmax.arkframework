@@ -1,0 +1,5 @@
+{
+  "name": "ArkFramework.Rig",
+  "rootNamespace": "ArkFramework",
+  "references": ["ArkFramework.Core", "ArkFramework.Platform", "ArkFramework.EventBus", "ArkFramework.Scene"]
+}

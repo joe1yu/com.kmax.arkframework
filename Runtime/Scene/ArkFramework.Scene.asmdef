@@ -1,5 +1,5 @@
 {
   "name": "ArkFramework.Scene",
   "rootNamespace": "ArkFramework",
-  "references": ["ArkFramework.Core", "ArkFramework.Resource", "ArkFramework.EventBus", "Unity.ResourceManager"]
+  "references": ["ArkFramework.Core", "ArkFramework.Resource", "ArkFramework.EventBus", "ArkFramework.Table", "Unity.ResourceManager"]
 }

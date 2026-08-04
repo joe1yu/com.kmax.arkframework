@@ -15,7 +15,13 @@ namespace ArkFramework.Samples
 
         public const string UITablePath =
             "ArkFrameworkSample/UI.csv";
+        public const string SceneTablePath =
+            "ArkFrameworkSample/Scenes.csv";
 
+        public const string MainMenuSceneId =
+            "Sample.MainMenuScene";
+        public const string GameplaySceneId =
+            "Sample.GameplayScene";
         public const string MainMenuSceneAddress =
             "sample/scene/main-menu";
         public const string GameplaySceneAddress =
@@ -25,6 +31,9 @@ namespace ArkFramework.Samples
         public const string GameplayHudWindowId =
             "Sample.GameplayHud";
         public const string LoadingWindowId = "Sample.Loading";
+
+        public const string MainRigId = "Main";
+        public const string MainCameraSlotId = "Main";
 
         public const string MenuMusicAddress = "sample/audio/menu";
         public const string GameplayMusicAddress =

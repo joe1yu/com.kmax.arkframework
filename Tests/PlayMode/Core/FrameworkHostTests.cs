@@ -362,6 +362,7 @@ namespace ArkFramework.Tests
                 CreateDefaultInstaller<ResourceModuleInstaller>(),
                 CreateDefaultInstaller<PoolModuleInstaller>(),
                 CreateDefaultInstaller<ConfigModuleInstaller>(),
+                CreateDefaultInstaller<TableModuleInstaller>(),
                 CreateDefaultInstaller<FsmModuleInstaller>(),
                 CreateDefaultInstaller<SceneModuleInstaller>(),
                 CreateDefaultInstaller<UIModuleInstaller>(),
@@ -371,7 +372,7 @@ namespace ArkFramework.Tests
 
             yield return WaitForTask(host.StartRuntimeAsync().AsTask());
 
-            Assert.That(host.Runtime.Modules, Has.Count.EqualTo(9));
+            Assert.That(host.Runtime.Modules, Has.Count.EqualTo(10));
             Assert.That(
                 host.Runtime.Modules,
                 Has.All.Matches<ModuleRecord>(

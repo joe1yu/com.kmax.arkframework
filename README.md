@@ -23,7 +23,7 @@ ArkFramework 是面向 Unity 2021.3 的模块化基础框架。包内包含运�
 也可以直接执行 **ArkFramework > Samples > Import Complete Sample** 完成导入；
 再次执行时会覆盖此前导入的同版本示例。
 
-完整示例覆盖十二个功能模块、Addressables 资源、CSV UI 配表、配置、
+完整示例覆盖十三个功能模块、Addressables 资源、CSV UI/Scene 配表、配置、
 场景/UI/音频切换、ActionKit Fluent API 和运行时诊断。生成器会根据导入位置自动解析示例根目录，
 因此不依赖固定的 `Assets` 路径。
 
@@ -44,6 +44,21 @@ Screen Space - Overlay、Screen Space - Camera 或 World Space。EventSystem 完
 `BaseRaycaster` 类型。平台模块会为该平台预制体实例内部的每个 `Canvas` 添加该
 组件，但不会扫描场景中的其他 Canvas。默认会替换标准 `GraphicRaycaster`；需要两者共存时重写
 `ReplacesStandardGraphicRaycaster` 并返回 `false`。
+
+## 相机 Rig
+
+在平台预制体中添加一个或多个 `CameraRig`，并在每个 Rig 的相机节点上添加
+`RigCameraSlot`。Rig 和槽位都使用唯一 ID，`RigModuleInstaller` 会通过
+`IRigService` 管理当前 Rig、多相机槽位和切换。`CameraRig.PoseRoot` 是位置同步的
+目标节点；未来接入 XR 时可指向 XR Origin，并通过
+`IRigComponentSynchronizer` 注册 XR 组件的专用复制逻辑，无需让基础模块依赖具体
+XR SDK。
+
+场景相机可添加 `SceneCameraBinding`，指定目标 Rig、槽位及位置来源。Scene 配表通过
+`RigId`、`SyncRigPose`、`SyncCameraSettings`、`SyncComponents`、
+`ComponentTypes` 和 `DisableSceneCameras` 分别控制同步策略。运行时调用
+`ISceneService.LoadByIdAsync(sceneId)`，场景完成切换后 Rig 会同步所选位置、Camera
+参数及白名单组件；不需要同步的项目可在对应表项关闭这些参数。
 
 ## 配表
 

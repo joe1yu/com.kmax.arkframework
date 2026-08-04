@@ -67,6 +67,74 @@ namespace ArkFramework.Tests
         }
 
         [Test]
+        public void CameraSyncOptionsTreatRigSelectionAsAnEnabledPolicy()
+        {
+            Assert.That(
+                new SceneCameraSyncOptions(
+                    "XR",
+                    SceneCameraSyncFlags.None).Enabled,
+                Is.True);
+            Assert.That(
+                new SceneCameraSyncOptions(
+                    null,
+                    SceneCameraSyncFlags.None).Enabled,
+                Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator LoadByIdUsesSceneTableAndPublishesCameraPolicy()
+        {
+            return RunAsync(LoadByIdUsesSceneTableAndPublishesCameraPolicyAsync());
+        }
+
+        private async Task LoadByIdUsesSceneTableAndPublishesCameraPolicyAsync()
+        {
+            var tableText =
+                "#class,ArkFramework.SceneTableRow\n" +
+                "#fields,Id,Address,Mode,ActivateOnLoad,RigId," +
+                "SyncRigPose,SyncCameraSettings,SyncComponents," +
+                "ComponentTypes,DisableSceneCameras\n" +
+                "#types,string,string,SceneLoadMode,bool,string,bool,bool," +
+                "bool,string[],bool\n" +
+                "#key,Id\n" +
+                ",scene.game,scene/address,Single,true,Main,true,true,true," +
+                "Example.First|Example.Second,true\n";
+            var tables = new TableService(new SceneTableSource(tableText));
+            var catalog = await tables.LoadAsync<SceneTableRow>("Scenes.csv");
+            tables.Dispose();
+            await _service.DisposeAsync();
+            _service = SceneService.CreateWithCatalog(
+                _backend,
+                _events,
+                catalog);
+
+            await _service.LoadByIdAsync("scene.game");
+
+            Assert.That(_service.ActiveSceneId, Is.EqualTo("scene.game"));
+            Assert.That(
+                _service.ActiveSceneKey,
+                Is.EqualTo(new ResourceKey("scene/address")));
+            Assert.That(
+                _service.TryGetDefinition("scene.game", out var definition),
+                Is.True);
+            Assert.That(definition.RigId, Is.EqualTo("Main"));
+            var completed = _events.Transitions.Last(
+                value => value.Stage == SceneTransitionStage.Completed);
+            Assert.That(completed.SceneId, Is.EqualTo("scene.game"));
+            Assert.That(completed.CameraSync.RigId, Is.EqualTo("Main"));
+            Assert.That(
+                completed.CameraSync.Flags,
+                Is.EqualTo(
+                    SceneCameraSyncFlags.RigPose |
+                    SceneCameraSyncFlags.CameraSettings |
+                    SceneCameraSyncFlags.Components));
+            Assert.That(
+                completed.CameraSync.ComponentTypeNames,
+                Is.EqualTo(new[] { "Example.First", "Example.Second" }));
+            Assert.That(completed.CameraSync.DisableSceneCameras, Is.True);
+        }
+
+        [Test]
         public void LifetimeCancellationCompletionPreventsBoundaryCommit()
         {
             var arbiter = new SceneRequestCancellationArbiter();
@@ -1049,7 +1117,7 @@ namespace ArkFramework.Tests
             Assert.That(module.Id, Is.EqualTo("Scene"));
             Assert.That(
                 module.Dependencies,
-                Is.EqualTo(new[] { "Resource", "EventBus" }));
+                Is.EqualTo(new[] { "Resource", "EventBus", "Table" }));
 
             var runtime = new FrameworkRuntime();
             var loader = new NoopSceneResourceLoader();
@@ -1058,7 +1126,8 @@ namespace ArkFramework.Tests
                 {
                     Describe(new ResourceStubModule(loader), 0),
                     Describe(new EventBusModule(), 1),
-                    Describe(module, 2)
+                    Describe(new TableModule(), 2),
+                    Describe(module, 3)
                 },
                 CancellationToken.None);
             var service = runtime.Services.Resolve<ISceneService>();
@@ -1624,6 +1693,24 @@ namespace ArkFramework.Tests
 
         private sealed class TestCleanupException : Exception
         {
+        }
+
+        private sealed class SceneTableSource : ITableTextSource
+        {
+            private readonly string _text;
+
+            public SceneTableSource(string text)
+            {
+                _text = text;
+            }
+
+            public ValueTask<string> ReadAsync(
+                string relativePath,
+                CancellationToken token = default)
+            {
+                token.ThrowIfCancellationRequested();
+                return new ValueTask<string>(_text);
+            }
         }
     }
 }

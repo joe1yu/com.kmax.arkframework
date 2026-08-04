@@ -11,4 +11,5 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3ca096cff5fbc4547a05b9cc10a30c7d, type: 3}
   m_Name: SceneInstaller
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
+  _sceneTablePath: ArkFrameworkSample/Scenes.csv
