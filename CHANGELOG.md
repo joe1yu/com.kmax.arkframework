@@ -23,3 +23,5 @@
 - 新增 Platform 平台初始化模块：支持平台预制体中的任意层级命名 UI 根节点、
   三种 Canvas 渲染模式，以及为预制体内部 Canvas 安装平台专用 Graphic Raycaster；
   EventSystem、根节点位置和 Canvas 参数均由项目自行管理。
+- 为旧版已导入 Sample 保留已废弃的 EventSystem/Canvases 只读兼容入口，避免更新
+  UPM 包后、重新导入 Sample 前出现源码编译错误；兼容入口不参与生命周期管理。

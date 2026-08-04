@@ -128,6 +128,10 @@ namespace ArkFramework.Tests
             Assert.That(
                 service.Root.GetComponentsInChildren<EventSystem>(true),
                 Is.Empty);
+#pragma warning disable CS0618
+            Assert.That(service.EventSystem, Is.Null);
+            Assert.That(service.Canvases, Has.Count.EqualTo(3));
+#pragma warning restore CS0618
             Assert.That(first, Is.Not.Null);
             Assert.That(second, Is.Not.Null);
         }
