@@ -20,5 +20,6 @@
   `testables` 启用。
 - Sample 集成测试改为随 Complete Sample 导入，避免未导入 Sample 的项目因
   缺少 `ArkFramework.Samples` 程序集而编译失败。
-- 新增 Platform 平台初始化模块：支持平台预制体、唯一 EventSystem 管理，以及为
-  当前和后续创建的 Canvas 自动安装平台专用 Graphic Raycaster。
+- 新增 Platform 平台初始化模块：支持平台预制体中的任意层级命名 UI 根节点、
+  三种 Canvas 渲染模式，以及为预制体内部 Canvas 安装平台专用 Graphic Raycaster；
+  EventSystem、根节点位置和 Canvas 参数均由项目自行管理。

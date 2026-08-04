@@ -13,7 +13,8 @@ namespace ArkFramework
             bool requiresMask,
             bool closeOnMaskClick,
             bool blocksInput,
-            bool? allowBack = null)
+            bool? allowBack = null,
+            string rootId = null)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -76,6 +77,9 @@ namespace ArkFramework
             BlocksInput = blocksInput;
             AllowBack = allowBack ??
                 (layer == UILayer.Normal || layer == UILayer.Popup);
+            RootId = string.IsNullOrWhiteSpace(rootId)
+                ? layer.ToString()
+                : rootId.Trim();
         }
 
         public string Id { get; }
@@ -95,5 +99,7 @@ namespace ArkFramework
         public bool BlocksInput { get; }
 
         public bool AllowBack { get; }
+
+        public string RootId { get; }
     }
 }

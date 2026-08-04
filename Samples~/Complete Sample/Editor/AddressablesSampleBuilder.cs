@@ -416,25 +416,25 @@ namespace ArkFramework.Editor
         {
             var content =
                 "#class,ArkFramework.Samples.SampleUIRow\n" +
-                "#fields,Id,WindowType,Address,Layer,Mode,CacheOnClose," +
+                "#fields,Id,WindowType,Address,RootId,Layer,Mode,CacheOnClose," +
                 "RequiresMask,CloseOnMaskClick,BlocksInput,AllowBack\n" +
-                "#types,string,string,string,UILayer,UIWindowMode,bool," +
+                "#types,string,string,string,string,UILayer,UIWindowMode,bool," +
                 "bool,bool,bool,bool\n" +
                 "#key,Id\n" +
-                "#comments,配表ID,窗口类型,Addressables地址,UI层级," +
+                "#comments,配表ID,窗口类型,Addressables地址,UI根节点,UI层级," +
                 "窗口模式,关闭缓存,需要遮罩,点击遮罩关闭,阻挡输入,允许返回\n" +
                 "," + SampleContent.MainMenuWindowId + ",MainMenuWindow," +
                 "sample/ui/main-menu" +
-                ",Normal,SingleInstance,false,false,false,false,true\n" +
+                ",Normal,Normal,SingleInstance,false,false,false,false,true\n" +
                 "," + SampleContent.GameplayHudWindowId +
                 ",GameplayHudWindow," +
                 "sample/ui/gameplay-hud" +
-                ",Normal,SingleInstance,false,false,false,false,true\n" +
+                ",Normal,Normal,SingleInstance,false,false,false,false,true\n" +
                 "//,Sample.Disabled,MainMenuWindow,sample/ui/disabled," +
-                "Normal,SingleInstance,false,false,false,false,true\n" +
+                "Normal,Normal,SingleInstance,false,false,false,false,true\n" +
                 "," + SampleContent.LoadingWindowId + ",LoadingWindow," +
                 "sample/ui/loading" +
-                ",System,SingleInstance,false,false,false,false,false\n";
+                ",System,System,SingleInstance,false,false,false,false,false\n";
             WriteTextIfChanged(UITablePath, content);
             AssetDatabase.ImportAsset(
                 UITablePath,
@@ -555,6 +555,30 @@ namespace ArkFramework.Editor
                 scaler.uiScaleMode =
                     CanvasScaler.ScaleMode.ScaleWithScreenSize;
                 scaler.referenceResolution = new Vector2(1920f, 1080f);
+
+                var rootsObject = new GameObject(
+                    "UI Roots",
+                    typeof(RectTransform));
+                rootsObject.transform.SetParent(
+                    canvasObject.transform,
+                    false);
+                Stretch(rootsObject.GetComponent<RectTransform>());
+                foreach (UILayer layer in Enum.GetValues(typeof(UILayer)))
+                {
+                    var uiRootObject = new GameObject(
+                        layer + " UI Root",
+                        typeof(RectTransform),
+                        typeof(PlatformUIRoot));
+                    uiRootObject.transform.SetParent(
+                        rootsObject.transform,
+                        false);
+                    Stretch(uiRootObject.GetComponent<RectTransform>());
+                    var serializedRoot = new SerializedObject(
+                        uiRootObject.GetComponent<PlatformUIRoot>());
+                    serializedRoot.FindProperty("_id").stringValue =
+                        layer.ToString();
+                    serializedRoot.ApplyModifiedPropertiesWithoutUndo();
+                }
 
                 var eventSystem = new GameObject(
                     "Platform EventSystem",

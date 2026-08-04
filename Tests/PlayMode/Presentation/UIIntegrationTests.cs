@@ -50,6 +50,7 @@ namespace ArkFramework.Tests
         private GameObjectPool _pool;
         private UIService _service;
         private UIRoot _root;
+        private GameObject _eventSystemObject;
         private string _runId;
 
         private string PrefabAddress =>
@@ -227,6 +228,10 @@ namespace ArkFramework.Tests
             _resources = new ResourceService(
                 new AddressablesResourceBackend());
             _pool = new GameObjectPool(_resources);
+            _eventSystemObject = new GameObject(
+                "UIIntegrationTests.EventSystem",
+                typeof(EventSystem),
+                typeof(StandaloneInputModule));
             _root = UIRoot.Create();
             _service = new UIService(
                 _resources,
@@ -257,6 +262,12 @@ namespace ArkFramework.Tests
                 yield return WaitForTask(dispose);
                 Observe(dispose);
                 _resources = null;
+            }
+
+            if (_eventSystemObject != null)
+            {
+                Object.Destroy(_eventSystemObject);
+                _eventSystemObject = null;
             }
 
             yield return null;
@@ -365,7 +376,6 @@ namespace ArkFramework.Tests
             Assert.That(_root == null, Is.True);
             _root = UIRoot.Create();
             yield return null;
-            Assert.That(_root.EventSystem, Is.Not.Null);
             Assert.That(EventSystem.current, Is.Not.Null);
             Assert.That(
                 Object.FindObjectsOfType<EventSystem>().Length,

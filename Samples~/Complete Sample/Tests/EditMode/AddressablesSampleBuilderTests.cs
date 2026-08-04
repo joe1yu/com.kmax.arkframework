@@ -287,7 +287,7 @@ namespace ArkFramework.Editor.Tests
         }
 
         [Test]
-        public void PlatformPrefabDefinesCanvasAndEventSystem()
+        public void PlatformPrefabDefinesNestedUIRootsAndUserEventSystem()
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                 PlatformPrefabPath);
@@ -303,6 +303,15 @@ namespace ArkFramework.Editor.Tests
             Assert.That(
                 prefab.GetComponentsInChildren<EventSystem>(true),
                 Has.Length.EqualTo(1));
+            var roots = prefab.GetComponentsInChildren<PlatformUIRoot>(true);
+            Assert.That(roots, Has.Length.EqualTo(5));
+            Assert.That(
+                roots.Select(root => root.Id),
+                Is.EquivalentTo(Enum.GetNames(typeof(UILayer))));
+            Assert.That(
+                roots.All(root => root.transform.parent.parent != prefab.transform),
+                Is.True,
+                "示例 UI 根节点应验证平台服务支持深层子物体。");
             Assert.That(installer, Is.Not.Null);
             Assert.That(installer.PlatformPrefab, Is.SameAs(prefab));
             Assert.That(installer.DontDestroyOnLoad, Is.True);
@@ -339,6 +348,9 @@ namespace ArkFramework.Editor.Tests
                         "sample/ui/gameplay-hud",
                         "sample/ui/loading"
                     }));
+            Assert.That(
+                document.Rows.Select(row => row.Cells[3]),
+                Is.EqualTo(new[] { "Normal", "Normal", "System" }));
         }
 
         [Test]

@@ -170,8 +170,10 @@ namespace ArkFramework.Samples.Tests
             var pool = runtime.Services.Resolve<IGameObjectPool>();
 
             Assert.That(platform.Root, Is.Not.Null);
-            Assert.That(platform.EventSystem, Is.Not.Null);
-            Assert.That(platform.Canvases, Is.Not.Empty);
+            Assert.That(platform.UIRoots, Has.Count.EqualTo(5));
+            Assert.That(
+                platform.GetUIRoot("Normal"),
+                Is.Not.Null);
 
             Assert.That(
                 tables.TryGetLoaded<SampleUIRow>(
@@ -195,6 +197,12 @@ namespace ArkFramework.Samples.Tests
                 audio);
             var mainMenu = (MainMenuWindow)flow.ActiveWindow;
             Assert.That(mainMenu.PlayButton, Is.Not.Null);
+            Assert.That(
+                mainMenu.transform.parent,
+                Is.SameAs(
+                    platform.GetUIRoot(
+                        sampleUI.Get(
+                            SampleContent.MainMenuWindowId).RootId)));
             mainMenu.PlayButton.onClick.Invoke();
 
             yield return WaitForCondition(

@@ -22,13 +22,21 @@ Build Settings。
 
 ## Platform 平台初始化
 
-1. 创建平台预制体，并按平台需要放入 UI、`Canvas` 和唯一的 `EventSystem`。
-2. 创建 `PlatformModuleInstaller`，把平台预制体赋给 `Platform Prefab`。
-3. 将 Platform Installer 放入 `FrameworkProfile`，通常位于 UI Installer 之前。
+1. 创建平台预制体，并按平台需要组织一个或多个 Canvas。
+2. 在任意层级的 `RectTransform` 节点上添加 `PlatformUIRoot`，为每个节点设置唯一
+   ID，例如 `Normal`、`System` 或项目自定义的 `WorldPanel`。
+3. 创建 `PlatformModuleInstaller`，把平台预制体赋给 `Platform Prefab`。
+4. 将 Platform Installer 放入 `FrameworkProfile`，通常位于 UI Installer 之前。
 
-如果平台预制体没有 `EventSystem`，模块会复用场景中唯一的运行时
-`EventSystem`；两者都不存在时会创建带 `StandaloneInputModule` 的默认对象。
-如果同时存在多个 `EventSystem`，初始化会明确失败，避免输入被重复派发。
+UI 根节点不要求是平台预制体的第一级子物体，也不要求自身带 Canvas。框架只保存
+节点引用并把窗口挂到节点下，不会重写节点坐标、锚点、缩放或 Canvas 参数，因此
+用户脚本可以在 Awake、Start 或运行时调整位置。Overlay、Camera 和 World Space
+三种 Canvas 渲染模式均可使用。
+
+`UIWindowDescriptor` 的可选 `rootId` 指定目标根节点；省略时使用 `UILayer` 名称。
+例如 Normal 窗口默认查找 ID 为 `Normal` 的 `PlatformUIRoot`。配表项目可以直接
+增加 `RootId` 字段并传入窗口描述。EventSystem 属于平台预制体或业务项目自己的
+内容，ArkFramework 不创建、不复用，也不校验 EventSystem。
 
 平台 SDK 提供专用 Graphic Raycaster 时，可在平台预制体上添加自定义配置器：
 
@@ -43,12 +51,13 @@ public sealed class VendorRaycasterConfigurator
 }
 ```
 
-`VendorGraphicRaycaster` 必须继承 `BaseRaycaster`。模块会扫描当前以及运行时新建的
-全部 `Canvas`，并保证每个 Canvas 只添加一个目标组件。配置器默认移除标准
+`VendorGraphicRaycaster` 必须继承 `BaseRaycaster`。模块只遍历实例化的平台预制体
+内部的 `Canvas`，并保证每个 Canvas 只添加一个目标组件；不会修改 Canvas 的
+Render Mode、相机、排序或变换。配置器默认移除标准
 `GraphicRaycaster`；重写 `ReplacesStandardGraphicRaycaster` 可让两者共存，
 重写 `AppliesTo` 可只处理指定 Canvas，重写 `ConfigureRaycaster` 可写入平台参数。
-运行时也可以解析 `IPlatformService`，读取平台根对象、`EventSystem`、Canvas 列表，
-或主动调用 `RefreshCanvases()`。
+运行时也可以解析 `IPlatformService`，通过 `UIRoots`、`TryGetUIRoot` 或
+`GetUIRoot` 读取实例中的命名根节点。
 
 ## 包测试
 

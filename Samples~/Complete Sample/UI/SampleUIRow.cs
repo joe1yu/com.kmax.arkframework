@@ -14,6 +14,8 @@ namespace ArkFramework.Samples
 
         public string Address { get; set; }
 
+        public string RootId { get; set; }
+
         public UILayer Layer { get; set; }
 
         public UIWindowMode Mode { get; set; }

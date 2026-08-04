@@ -4,7 +4,6 @@ using System.Collections.ObjectModel;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
@@ -43,6 +42,8 @@ namespace ArkFramework
 
         private readonly Dictionary<UILayer, RectTransform> _layerRoots =
             new Dictionary<UILayer, RectTransform>();
+        private readonly Dictionary<string, RectTransform> _namedRoots =
+            new Dictionary<string, RectTransform>(StringComparer.Ordinal);
         private IReadOnlyList<LayerRoot> _layers;
         [SerializeField]
         private bool _initialized;
@@ -52,11 +53,12 @@ namespace ArkFramework
         private RectTransform[] _serializedLayerRoots =
             new RectTransform[LayerOrder.Length];
         [SerializeField]
+        private string[] _serializedRootIds = Array.Empty<string>();
+        [SerializeField]
+        private RectTransform[] _serializedRoots =
+            Array.Empty<RectTransform>();
+        [SerializeField]
         private Button _mask;
-        [SerializeField]
-        private EventSystem _eventSystem;
-        [SerializeField]
-        private bool _ownsEventSystem;
         private bool _disposed;
         private readonly TaskCompletionSource<bool> _destroyCompletion =
             new TaskCompletionSource<bool>(
@@ -71,15 +73,6 @@ namespace ArkFramework
             }
         }
 
-        public EventSystem EventSystem
-        {
-            get
-            {
-                EnsureOwnerThread();
-                return _eventSystem;
-            }
-        }
-
         public Button Mask => _mask;
 
         internal int OwnerThreadId { get; private set; }
@@ -87,6 +80,36 @@ namespace ArkFramework
         internal RectTransform StagingRoot => _stagingRoot;
 
         public static UIRoot Create(bool dontDestroyOnLoad = true)
+        {
+            return CreateInternal(
+                dontDestroyOnLoad,
+                null,
+                null);
+        }
+
+        public static UIRoot Create(IPlatformService platform)
+        {
+            if (platform == null)
+            {
+                throw new ArgumentNullException(nameof(platform));
+            }
+
+            if (platform.UIRoots.Count == 0)
+            {
+                throw new InvalidOperationException(
+                    "The platform prefab does not define any UI roots.");
+            }
+
+            return CreateInternal(
+                false,
+                platform.Root.transform,
+                platform.UIRoots);
+        }
+
+        private static UIRoot CreateInternal(
+            bool dontDestroyOnLoad,
+            Transform owner,
+            IReadOnlyList<PlatformUIRoot> platformRoots)
         {
             var currentThreadId = ValidateUnityMainThread();
             var candidates = new List<UIRoot>();
@@ -124,6 +147,11 @@ namespace ArkFramework
                 "ArkFramework.UIRoot",
                 typeof(RectTransform),
                 typeof(UIRoot));
+            if (owner != null)
+            {
+                rootObject.transform.SetParent(owner, false);
+            }
+
             rootObject.hideFlags = dontDestroyOnLoad
                 ? HideFlags.None
                 : HideFlags.HideAndDontSave;
@@ -131,7 +159,14 @@ namespace ArkFramework
             root.OwnerThreadId = currentThreadId;
             try
             {
-                root.Build(dontDestroyOnLoad);
+                if (platformRoots == null)
+                {
+                    root.Build(dontDestroyOnLoad);
+                }
+                else
+                {
+                    root.BindPlatformRoots(platformRoots);
+                }
             }
             catch
             {
@@ -160,6 +195,41 @@ namespace ArkFramework
             return root;
         }
 
+        public RectTransform GetRoot(string id)
+        {
+            EnsureOwnerThread();
+            if (string.IsNullOrWhiteSpace(id) ||
+                !_namedRoots.TryGetValue(id.Trim(), out var root))
+            {
+                throw new KeyNotFoundException(
+                    "UI root '" + id + "' was not found.");
+            }
+
+            return root;
+        }
+
+        internal RectTransform GetWindowRoot(
+            UIWindowDescriptor descriptor)
+        {
+            return GetRoot(descriptor.RootId);
+        }
+
+        internal void PlaceMask(RectTransform parent)
+        {
+            EnsureOwnerThread();
+            if (parent == null)
+            {
+                throw new ArgumentNullException(nameof(parent));
+            }
+
+            var transform = (RectTransform)_mask.transform;
+            if (transform.parent != parent)
+            {
+                transform.SetParent(parent, false);
+                Stretch(transform);
+            }
+        }
+
         public void Dispose()
         {
             BeginDispose();
@@ -181,7 +251,6 @@ namespace ArkFramework
 
             _disposed = true;
             _initialized = false;
-            DisposeOwnedEventSystem();
             if (this == null)
             {
                 _destroyCompletion.TrySetResult(true);
@@ -203,7 +272,6 @@ namespace ArkFramework
         {
             _disposed = true;
             _initialized = false;
-            DisposeOwnedEventSystem();
             if (_instance == this)
             {
                 _instance = null;
@@ -219,13 +287,7 @@ namespace ArkFramework
                 Object.DontDestroyOnLoad(gameObject);
             }
 
-            var stagingObject = new GameObject(
-                "ArkFramework.UIStaging",
-                typeof(RectTransform));
-            _stagingRoot = stagingObject.GetComponent<RectTransform>();
-            _stagingRoot.SetParent(base.transform, false);
-            Stretch(_stagingRoot);
-            stagingObject.SetActive(false);
+            BuildStagingRoot();
 
             var layerValues = new LayerRoot[LayerOrder.Length];
             for (var index = 0; index < LayerOrder.Length; index++)
@@ -249,6 +311,7 @@ namespace ArkFramework
                     CanvasScaler.ScaleMode.ScaleWithScreenSize;
                 scaler.referenceResolution = new Vector2(1920f, 1080f);
                 _layerRoots.Add(layer, transform);
+                _namedRoots.Add(layer.ToString(), transform);
                 _serializedLayerRoots[index] = transform;
                 layerValues[index] = new LayerRoot(
                     layer,
@@ -257,9 +320,51 @@ namespace ArkFramework
             }
 
             _layers = new ReadOnlyCollection<LayerRoot>(layerValues);
+            SerializeNamedRoots();
             BuildMask();
-            EnsureEventSystem(dontDestroyOnLoad);
             _initialized = true;
+        }
+
+        private void BindPlatformRoots(
+            IReadOnlyList<PlatformUIRoot> platformRoots)
+        {
+            BuildStagingRoot();
+            for (var index = 0; index < platformRoots.Count; index++)
+            {
+                var platformRoot = platformRoots[index];
+                if (platformRoot == null ||
+                    platformRoot.RectTransform == null ||
+                    string.IsNullOrWhiteSpace(platformRoot.Id))
+                {
+                    throw new InvalidOperationException(
+                        "The platform contains an invalid UI root.");
+                }
+
+                var id = platformRoot.Id.Trim();
+                if (_namedRoots.ContainsKey(id))
+                {
+                    throw new InvalidOperationException(
+                        "UI root ID '" + id + "' is duplicated.");
+                }
+
+                _namedRoots.Add(id, platformRoot.RectTransform);
+            }
+
+            RestoreLayerMappings();
+            SerializeNamedRoots();
+            BuildMask();
+            _initialized = true;
+        }
+
+        private void BuildStagingRoot()
+        {
+            var stagingObject = new GameObject(
+                "ArkFramework.UIStaging",
+                typeof(RectTransform));
+            _stagingRoot = stagingObject.GetComponent<RectTransform>();
+            _stagingRoot.SetParent(base.transform, false);
+            Stretch(_stagingRoot);
+            stagingObject.SetActive(false);
         }
 
         private void BuildMask()
@@ -271,7 +376,7 @@ namespace ArkFramework
                 typeof(Image),
                 typeof(Button));
             var transform = maskObject.GetComponent<RectTransform>();
-            transform.SetParent(GetLayerRoot(UILayer.Popup), false);
+            transform.SetParent(base.transform, false);
             Stretch(transform);
             var image = maskObject.GetComponent<Image>();
             image.color = new Color(0f, 0f, 0f, 0.55f);
@@ -297,105 +402,81 @@ namespace ArkFramework
                     "The runtime UIRoot candidate has an invalid staging root.");
             }
 
-            if (_serializedLayerRoots == null ||
-                _serializedLayerRoots.Length != LayerOrder.Length)
+            if (_serializedRootIds == null ||
+                _serializedRoots == null ||
+                _serializedRootIds.Length != _serializedRoots.Length ||
+                _serializedRootIds.Length == 0)
             {
                 throw new InvalidOperationException(
-                    "The runtime UIRoot candidate has invalid layer references.");
+                    "The runtime UIRoot candidate has invalid root references.");
             }
 
-            _layerRoots.Clear();
-            var layerValues = new LayerRoot[LayerOrder.Length];
-            for (var index = 0; index < LayerOrder.Length; index++)
+            _namedRoots.Clear();
+            for (var index = 0; index < _serializedRootIds.Length; index++)
             {
-                var transform = _serializedLayerRoots[index];
-                if (transform == null ||
-                    transform.parent != base.transform)
+                var id = _serializedRootIds[index];
+                var transform = _serializedRoots[index];
+                if (string.IsNullOrWhiteSpace(id) || transform == null ||
+                    _namedRoots.ContainsKey(id))
                 {
                     throw new InvalidOperationException(
-                        "The runtime UIRoot candidate has an invalid layer root.");
+                        "The runtime UIRoot candidate has an invalid named root.");
                 }
 
-                var canvas = transform.GetComponent<Canvas>();
-                if (canvas == null ||
-                    transform.GetComponent<CanvasScaler>() == null ||
-                    transform.GetComponent<GraphicRaycaster>() == null ||
-                    canvas.renderMode != RenderMode.ScreenSpaceOverlay ||
-                    canvas.sortingOrder != SortingOrders[index])
-                {
-                    throw new InvalidOperationException(
-                        "The runtime UIRoot candidate has an invalid canvas layer " +
-                        index + " (canvas=" + (canvas != null) +
-                        ", scaler=" +
-                        (transform.GetComponent<CanvasScaler>() != null) +
-                        ", raycaster=" +
-                        (transform.GetComponent<GraphicRaycaster>() != null) +
-                        ", renderMode=" +
-                        (canvas == null
-                            ? "missing"
-                            : canvas.renderMode.ToString()) +
-                        ", sortingOrder=" +
-                        (canvas == null ? -1 : canvas.sortingOrder) + ").");
-                }
-
-                var layer = LayerOrder[index];
-                _layerRoots.Add(layer, transform);
-                layerValues[index] = new LayerRoot(
-                    layer,
-                    transform,
-                    SortingOrders[index]);
+                _namedRoots.Add(id, transform);
             }
 
-            if (_mask == null ||
-                _mask.transform.parent !=
-                _serializedLayerRoots[(int)UILayer.Popup])
+            RestoreLayerMappings();
+            if (_mask == null)
             {
                 throw new InvalidOperationException(
                     "The runtime UIRoot candidate has an invalid popup mask.");
             }
 
-            if (_eventSystem == null ||
-                (_ownsEventSystem &&
-                 _eventSystem.GetComponent<UIEventSystemOwnership>() == null))
-            {
-                throw new InvalidOperationException(
-                    "The runtime UIRoot candidate has an invalid EventSystem.");
-            }
-
             OwnerThreadId = ownerThreadId;
-            _layers = new ReadOnlyCollection<LayerRoot>(layerValues);
         }
 
-        private void EnsureEventSystem(bool dontDestroyOnLoad)
+        private void RestoreLayerMappings()
         {
-            var eventSystems =
-                Object.FindObjectsOfType<EventSystem>();
-            for (var index = 0; index < eventSystems.Length; index++)
+            _layerRoots.Clear();
+            var layerValues = new List<LayerRoot>(LayerOrder.Length);
+            for (var index = 0; index < LayerOrder.Length; index++)
             {
-                var candidate = eventSystems[index];
-                var ownership =
-                    candidate.GetComponent<UIEventSystemOwnership>();
-                if (ownership == null || !ownership.IsDisposing)
+                var layer = LayerOrder[index];
+                // 未显式填写 RootId 的窗口按 UILayer 名称查找兼容根节点。
+                if (!_namedRoots.TryGetValue(
+                        layer.ToString(),
+                        out var transform))
                 {
-                    _eventSystem = candidate;
-                    return;
+                    _serializedLayerRoots[index] = null;
+                    continue;
                 }
+
+                _layerRoots.Add(layer, transform);
+                _serializedLayerRoots[index] = transform;
+                var canvas = transform.GetComponentInParent<Canvas>();
+                layerValues.Add(new LayerRoot(
+                    layer,
+                    transform,
+                    canvas == null
+                        ? SortingOrders[index]
+                        : canvas.sortingOrder));
             }
 
-            var eventObject = new GameObject(
-                "ArkFramework.EventSystem",
-                typeof(EventSystem),
-                typeof(StandaloneInputModule),
-                typeof(UIEventSystemOwnership));
-            _eventSystem = eventObject.GetComponent<EventSystem>();
-            _ownsEventSystem = true;
-            if (Application.isPlaying && dontDestroyOnLoad)
+            _layers = new ReadOnlyCollection<LayerRoot>(
+                layerValues.ToArray());
+        }
+
+        private void SerializeNamedRoots()
+        {
+            _serializedRootIds = new string[_namedRoots.Count];
+            _serializedRoots = new RectTransform[_namedRoots.Count];
+            var index = 0;
+            foreach (var pair in _namedRoots)
             {
-                Object.DontDestroyOnLoad(eventObject);
-            }
-            else if (!dontDestroyOnLoad)
-            {
-                eventObject.hideFlags = HideFlags.HideAndDontSave;
+                _serializedRootIds[index] = pair.Key;
+                _serializedRoots[index] = pair.Value;
+                index++;
             }
         }
 
@@ -430,25 +511,6 @@ namespace ArkFramework
             return candidate.gameObject.scene.IsValid() ||
                    (candidate.gameObject.hideFlags &
                     HideFlags.HideAndDontSave) != 0;
-        }
-
-        private void DisposeOwnedEventSystem()
-        {
-            if (_ownsEventSystem && _eventSystem != null)
-            {
-                var ownership =
-                    _eventSystem.GetComponent<UIEventSystemOwnership>();
-                if (ownership != null)
-                {
-                    ownership.IsDisposing = true;
-                }
-
-                _eventSystem.gameObject.SetActive(false);
-                DestroyOwnedObject(_eventSystem.gameObject);
-            }
-
-            _eventSystem = null;
-            _ownsEventSystem = false;
         }
 
         private void EnsureOwnerThread()
@@ -512,10 +574,5 @@ namespace ArkFramework
 
             public int SortingOrder { get; }
         }
-    }
-
-    internal sealed class UIEventSystemOwnership : MonoBehaviour
-    {
-        public bool IsDisposing { get; set; }
     }
 }

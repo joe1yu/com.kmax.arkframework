@@ -7,7 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.ResourceManagement.ResourceProviders;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -25,13 +24,11 @@ namespace ArkFramework.Tests
         private UIRoot _root;
         private UIService _service;
         private HashSet<int> _initialRootIds;
-        private HashSet<int> _initialEventSystemIds;
 
         [SetUp]
         public void SetUp()
         {
             _initialRootIds = SnapshotRuntimeIds<UIRoot>();
-            _initialEventSystemIds = SnapshotRuntimeIds<EventSystem>();
             if (_initialRootIds.Count != 0)
             {
                 Assert.Ignore(
@@ -65,7 +62,6 @@ namespace ArkFramework.Tests
                 Observe(dispose);
             }
 
-            DestroyCreated<EventSystem>(_initialEventSystemIds);
             DestroyCreated<UIRoot>(_initialRootIds);
             TestWindow.ResetCounters();
         }
@@ -102,8 +98,11 @@ namespace ArkFramework.Tests
 
             var normal = Descriptor(layer: UILayer.Normal);
             var system = Descriptor(layer: UILayer.System);
+            var customRoot = Descriptor(rootId: "WorldPanel");
             Assert.That(normal.AllowBack, Is.True);
             Assert.That(system.AllowBack, Is.False);
+            Assert.That(normal.RootId, Is.EqualTo("Normal"));
+            Assert.That(customRoot.RootId, Is.EqualTo("WorldPanel"));
         }
 
         [UnityTest]
@@ -145,7 +144,7 @@ namespace ArkFramework.Tests
         }
 
         [Test]
-        public void RootCreatesFiveOrderedCanvasesAndReusesExistingEventSystem()
+        public void RootCreatesFiveOrderedDefaultCanvases()
         {
             Assert.That(
                 UIRoot.Create(dontDestroyOnLoad: false).GetInstanceID(),
@@ -154,10 +153,6 @@ namespace ArkFramework.Tests
             _root.Dispose();
             _root = null;
             _service = null;
-            var external = new GameObject(
-                "External.EventSystem",
-                typeof(EventSystem),
-                typeof(StandaloneInputModule));
             var second = UIRoot.Create(dontDestroyOnLoad: false);
             try
             {
@@ -186,13 +181,7 @@ namespace ArkFramework.Tests
                             item.Root.GetComponent<CanvasScaler>() != null &&
                             item.Root.GetComponent<GraphicRaycaster>() != null),
                     Is.True);
-                Assert.That(
-                    Object.FindObjectsOfType<EventSystem>().Length,
-                    Is.EqualTo(1));
-                Assert.That(second.EventSystem, Is.SameAs(external.GetComponent<EventSystem>()));
-
                 second.Dispose();
-                Assert.That(external, Is.Not.Null);
             }
             finally
             {
@@ -201,7 +190,6 @@ namespace ArkFramework.Tests
                     second.Dispose();
                 }
 
-                Object.DestroyImmediate(external);
             }
         }
 
@@ -209,22 +197,12 @@ namespace ArkFramework.Tests
         public void FixtureCleanupPreservesObjectsPresentAtSnapshot()
         {
             var protectedRoot = _root;
-            var protectedEventSystem = _root.EventSystem;
-            var createdEventObject = new GameObject(
-                "Fixture.Created.EventSystem",
-                typeof(EventSystem),
-                typeof(StandaloneInputModule));
             var createdRootObject = new GameObject(
                 "Fixture.Created.UIRoot",
                 typeof(RectTransform),
                 typeof(UIRoot));
             createdRootObject.hideFlags = HideFlags.HideAndDontSave;
 
-            DestroyCreated<EventSystem>(
-                new HashSet<int>
-                {
-                    protectedEventSystem.GetInstanceID()
-                });
             DestroyCreated<UIRoot>(
                 new HashSet<int>
                 {
@@ -232,13 +210,11 @@ namespace ArkFramework.Tests
                 });
 
             Assert.That(protectedRoot, Is.Not.Null);
-            Assert.That(protectedEventSystem, Is.Not.Null);
-            Assert.That(createdEventObject == null, Is.True);
             Assert.That(createdRootObject == null, Is.True);
         }
 
         [UnityTest]
-        public IEnumerator ExternallyDestroyedRootCleansOwnedEventSystemAndStopCompletes()
+        public IEnumerator ExternallyDestroyedRootStillAllowsStopToComplete()
         {
             _service.Register<TestWindow>(Descriptor());
             TestWindow.SubscribeDuringOpen = true;
@@ -249,17 +225,8 @@ namespace ArkFramework.Tests
             Assert.That(open.IsCompletedSuccessfully, Is.True);
             var handle = open.GetAwaiter().GetResult();
 
-            var ownedEventSystem = _root.EventSystem;
-            var ownsEventSystemField = typeof(UIRoot).GetField(
-                "_ownsEventSystem",
-                BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.That(ownsEventSystemField, Is.Not.Null);
-            Assert.That(
-                ownsEventSystemField.GetValue(_root),
-                Is.EqualTo(true));
             Object.DestroyImmediate(_root.gameObject);
             Assert.That(_root == null, Is.True);
-            Assert.That(ownedEventSystem == null, Is.True);
 
             Task close = null;
             Assert.DoesNotThrow(
@@ -1371,13 +1338,6 @@ namespace ArkFramework.Tests
             yield return null;
             var replacementRoot = Object.FindObjectOfType<UIRoot>();
             Assert.That(replacementRoot, Is.Not.Null);
-            Assert.That(replacementRoot.EventSystem, Is.Not.Null);
-            Assert.That(
-                replacementRoot.EventSystem.gameObject.activeSelf,
-                Is.True);
-            Assert.That(
-                Object.FindObjectsOfType<EventSystem>().Length,
-                Is.EqualTo(1));
 
             var runtimeStop = runtime.StopAsync(
                 CancellationToken.None).AsTask();
@@ -1407,7 +1367,8 @@ namespace ArkFramework.Tests
             bool requiresMask = false,
             bool closeOnMaskClick = false,
             bool blocksInput = false,
-            bool? allowBack = null)
+            bool? allowBack = null,
+            string rootId = null)
         {
             return new UIWindowDescriptor(
                 id,
@@ -1418,7 +1379,8 @@ namespace ArkFramework.Tests
                 requiresMask,
                 closeOnMaskClick,
                 blocksInput,
-                allowBack);
+                allowBack,
+                rootId);
         }
 
         private static GameObject CreatePrefab<T>(string name)

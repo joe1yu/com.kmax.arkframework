@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 namespace ArkFramework
 {
@@ -9,10 +8,10 @@ namespace ArkFramework
     {
         GameObject Root { get; }
 
-        EventSystem EventSystem { get; }
+        IReadOnlyList<PlatformUIRoot> UIRoots { get; }
 
-        IReadOnlyList<Canvas> Canvases { get; }
+        bool TryGetUIRoot(string id, out RectTransform root);
 
-        void RefreshCanvases();
+        RectTransform GetUIRoot(string id);
     }
 }

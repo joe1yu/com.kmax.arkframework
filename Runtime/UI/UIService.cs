@@ -412,7 +412,7 @@ namespace ArkFramework
                 entry.Lifetime = CancellationTokenSource
                     .CreateLinkedTokenSource(_lifetime.Token);
                 GameObject instance;
-                var parent = _root.GetLayerRoot(entry.Descriptor.Layer);
+                var parent = _root.GetWindowRoot(entry.Descriptor);
                 var stagingParent = _root.StagingRoot;
                 if (entry.Descriptor.CacheOnClose)
                 {
@@ -1028,6 +1028,8 @@ namespace ArkFramework
             }
 
             mask.gameObject.SetActive(true);
+            var popupRoot = _root.GetWindowRoot(popup.Descriptor);
+            _root.PlaceMask(popupRoot);
             mask.GetComponent<Image>().raycastTarget =
                 popup.Descriptor.BlocksInput ||
                 popup.Descriptor.CloseOnMaskClick;
@@ -1039,7 +1041,8 @@ namespace ArkFramework
             {
                 var entry = _popupNavigation[index];
                 if (entry.State != UIWindowState.Open ||
-                    entry.Window == null)
+                    entry.Window == null ||
+                    entry.Window.transform.parent != popupRoot)
                 {
                     continue;
                 }

@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace ArkFramework
 {
-    public sealed class PlatformModule : IFrameworkModule, IUpdateModule
+    public sealed class PlatformModule : IFrameworkModule
     {
         private static readonly IReadOnlyCollection<string> NoDependencies =
             Array.Empty<string>();
@@ -14,7 +14,6 @@ namespace ArkFramework
         private readonly GameObject _platformPrefab;
         private readonly bool _dontDestroyOnLoad;
         private PlatformService _service;
-        private bool _started;
         private bool _disposed;
 
         public PlatformModule(
@@ -70,14 +69,11 @@ namespace ArkFramework
         {
             EnsureInitialized();
             token.ThrowIfCancellationRequested();
-            _service.RefreshCanvases();
-            _started = true;
             return default;
         }
 
         public ValueTask StopAsync(CancellationToken token)
         {
-            _started = false;
             token.ThrowIfCancellationRequested();
             return default;
         }
@@ -90,17 +86,8 @@ namespace ArkFramework
             }
 
             _disposed = true;
-            _started = false;
             _service = null;
             return default;
-        }
-
-        public void Update(float deltaTime)
-        {
-            if (_started)
-            {
-                _service.RefreshCanvases();
-            }
         }
 
         private void EnsureInitialized()

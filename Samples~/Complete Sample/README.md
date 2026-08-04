@@ -17,12 +17,13 @@ Resource、Pool、Config、Table、FSM、Scene、UI、Audio、ActionKit、Proced
 页面按钮通过 ActionKit Fluent API 在下一帧启动异步 Procedure 切换；加载窗口、
 Addressables 场景/UI、背景音乐和配置读取均由框架模块协同完成。
 
-生成的 `PlatformRoot.prefab` 定义平台级 Canvas 和唯一的 `EventSystem`，并由
-`PlatformModuleInstaller` 在框架启动时实例化。项目接入具体平台 SDK 时，可以在
-该预制体上挂载 `PlatformGraphicRaycasterConfigurator` 子类，为所有 UI Canvas
-自动安装平台专用 Graphic Raycaster。
+生成的 `PlatformRoot.prefab` 在深层子物体中定义五个 `PlatformUIRoot`，并由
+`PlatformModuleInstaller` 在框架启动时实例化。它包含的 `EventSystem` 只是平台
+预制体自身内容，框架不会管理。项目接入具体平台 SDK 时，可以在该预制体上挂载
+`PlatformGraphicRaycasterConfigurator` 子类，为预制体内部 Canvas 自动安装平台
+专用 Graphic Raycaster。
 
-三个窗口的 Addressables 地址、层级、窗口模式和交互开关都来自 `UI.csv`。
+三个窗口的 Addressables 地址、根节点 ID、层级、窗口模式和交互开关都来自 `UI.csv`。
 `SampleUIService.OpenAsync(tableId)` 先按配表主键查询，再调用对应窗口类型，
 Procedure 不再硬编码 `UIWindowDescriptor` 或泛型打开入口。CSV 的 A 列保留给
 `#fields/#types/#comments` 指令，数据从 B 列开始，以便在表格软件中纵向对齐。

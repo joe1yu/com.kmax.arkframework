@@ -100,7 +100,8 @@ namespace ArkFramework.Samples
                 row.RequiresMask,
                 row.CloseOnMaskClick,
                 row.BlocksInput,
-                row.AllowBack);
+                row.AllowBack,
+                row.RootId);
         }
 
         private static string ValidateTableId(string tableId)

@@ -30,13 +30,19 @@ ArkFramework 是面向 Unity 2021.3 的模块化基础框架。包内包含运�
 ## 平台初始化
 
 创建 `PlatformModuleInstaller` 并指定平台预制体。模块启动时会实例化该预制体，
-初始化其中的 UI 与 `EventSystem`；未提供 `EventSystem` 时会自动创建一个默认实现。
-建议把 Platform Installer 放在 UI Installer 之前。
+递归收集其中带 `PlatformUIRoot` 的命名 UI 根节点。根节点可以位于任意层级；
+框架不会修改其坐标、锚点或所属 Canvas，因此用户脚本可以在 Awake、Start 或
+运行时继续移动它。建议把 Platform Installer 放在 UI Installer 之前。
+
+窗口描述的 `rootId` 用于选择根节点；省略时默认使用 `UILayer` 的名称，例如
+`UILayer.Normal` 对应 ID 为 `Normal` 的根节点。Canvas 可以使用
+Screen Space - Overlay、Screen Space - Camera 或 World Space。EventSystem 完全由
+平台预制体或项目自行配置，框架不会创建、复用或校验它。
 
 平台 SDK 需要自定义 UI 射线检测器时，在平台预制体上添加一个继承
 `PlatformGraphicRaycasterConfigurator` 的组件，并让 `RaycasterType` 返回 SDK 的
-`BaseRaycaster` 类型。平台模块会为当前以及后续创建的每个 `Canvas` 自动添加该
-组件。默认会替换标准 `GraphicRaycaster`；需要两者共存时重写
+`BaseRaycaster` 类型。平台模块会为该平台预制体实例内部的每个 `Canvas` 添加该
+组件，但不会扫描场景中的其他 Canvas。默认会替换标准 `GraphicRaycaster`；需要两者共存时重写
 `ReplacesStandardGraphicRaycaster` 并返回 `false`。
 
 ## 配表

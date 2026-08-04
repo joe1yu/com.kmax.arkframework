@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
@@ -14,8 +16,13 @@ namespace ArkFramework.Tests
 {
     public sealed class PlatformModuleTests
     {
-        private readonly List<Object> _createdObjects =
-            new List<Object>();
+        private static readonly FieldInfo UIRootIdField =
+            typeof(PlatformUIRoot).GetField(
+                "_id",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+
+        private readonly List<Object> _createdObjects = new List<Object>();
+        private readonly List<UIRoot> _uiRoots = new List<UIRoot>();
         private readonly List<PlatformService> _services =
             new List<PlatformService>();
         private readonly List<FrameworkRuntime> _runtimes =
@@ -32,6 +39,17 @@ namespace ArkFramework.Tests
             }
 
             _runtimes.Clear();
+            for (var index = _uiRoots.Count - 1; index >= 0; index--)
+            {
+                if (_uiRoots[index] != null)
+                {
+                    var task = _uiRoots[index].DisposeAsync().AsTask();
+                    yield return WaitFor(task);
+                    task.GetAwaiter().GetResult();
+                }
+            }
+
+            _uiRoots.Clear();
             for (var index = _services.Count - 1; index >= 0; index--)
             {
                 var task = _services[index].DisposeAsync().AsTask();
@@ -44,14 +62,7 @@ namespace ArkFramework.Tests
             {
                 if (_createdObjects[index] != null)
                 {
-                    if (_createdObjects[index] is UIRoot uiRoot)
-                    {
-                        Object.Destroy(uiRoot.gameObject);
-                    }
-                    else
-                    {
-                        Object.Destroy(_createdObjects[index]);
-                    }
+                    Object.Destroy(_createdObjects[index]);
                 }
             }
 
@@ -65,9 +76,7 @@ namespace ArkFramework.Tests
             var installer = Track(
                 ScriptableObject.CreateInstance<PlatformModuleInstaller>());
 
-            Assert.That(
-                installer.ModuleId,
-                Is.EqualTo(BuiltInModuleIds.Platform));
+            Assert.That(installer.ModuleId, Is.EqualTo(BuiltInModuleIds.Platform));
             Assert.That(installer.Dependencies, Is.Empty);
             Assert.That(
                 installer.ServiceTypes,
@@ -78,130 +87,123 @@ namespace ArkFramework.Tests
         }
 
         [Test]
-        public void Service_InstantiatesPrefabAndUsesItsEventSystem()
+        public void Service_FindsDeepUIRootsAndPreservesEveryCanvasMode()
         {
-            var template = CreateTemplate(withEventSystem: true);
+            var template = CreateTemplateWithThreeCanvasModes();
             var service = Track(new PlatformService(template, false));
 
             Assert.That(service.Root, Is.Not.SameAs(template));
-            Assert.That(service.Root.name, Is.EqualTo(template.name));
+            Assert.That(service.UIRoots, Has.Count.EqualTo(3));
             Assert.That(
-                service.EventSystem.transform.IsChildOf(
-                    service.Root.transform),
-                Is.True);
-            Assert.That(service.Canvases, Has.Count.EqualTo(1));
+                service.UIRoots.Select(root => root.Id),
+                Is.EquivalentTo(new[] { "Overlay", "Camera", "World" }));
             Assert.That(
-                service.Canvases[0].transform.IsChildOf(
-                    service.Root.transform),
-                Is.True);
-        }
-
-        [Test]
-        public void Service_CreatesFallbackEventSystemWhenNoneExists()
-        {
-            var template = CreateTemplate(withEventSystem: false);
-            var service = Track(new PlatformService(template, false));
-
-            Assert.That(service.EventSystem, Is.Not.Null);
+                service.GetUIRoot("World").anchoredPosition3D,
+                Is.EqualTo(new Vector3(11f, 22f, 33f)));
             Assert.That(
-                service.EventSystem.GetComponent<StandaloneInputModule>(),
-                Is.Not.Null);
-            Assert.That(
-                service.EventSystem.transform.parent,
-                Is.EqualTo(service.Root.transform));
-        }
-
-        [Test]
-        public void Service_RejectsConflictingRuntimeEventSystems()
-        {
-            var external = Track(
-                new GameObject(
-                    "External EventSystem",
-                    typeof(EventSystem),
-                    typeof(StandaloneInputModule)));
-            var template = CreateTemplate(withEventSystem: true);
-
-            var exception = Assert.Throws<InvalidOperationException>(
-                () => new PlatformService(template, false));
-
-            StringAssert.Contains(
-                "another runtime EventSystem",
-                exception.Message);
-            Assert.That(external, Is.Not.Null);
-        }
-
-        [UnityTest]
-        public IEnumerator Module_ConfiguresExistingAndLateCanvasesOnce()
-        {
-            var template = CreateTemplate(withEventSystem: false);
-            template.AddComponent<TestRaycasterConfigurator>();
-            var existing = CreateCanvas("Existing Canvas", withRaycaster: true);
-            var runtime = Track(new FrameworkRuntime());
-            var startTask = runtime.StartAsync(
+                service.Root.GetComponentsInChildren<Canvas>(true)
+                    .Select(canvas => canvas.renderMode),
+                Is.EquivalentTo(
                     new[]
                     {
-                        new ModuleDescriptor(
-                            BuiltInModuleIds.Platform,
-                            Array.Empty<string>(),
-                            0,
-                            () => new PlatformModule(template, false))
-                    },
-                    CancellationToken.None)
-                .AsTask();
-            yield return WaitFor(startTask);
-            startTask.GetAwaiter().GetResult();
-
-            var service = runtime.Services.Resolve<IPlatformService>();
-            var configurator =
-                service.Root.GetComponent<TestRaycasterConfigurator>();
-            var platformCanvas =
-                service.Root.GetComponentInChildren<Canvas>(true);
-            Assert.That(existing.GetComponent<TestRaycaster>(), Is.Not.Null);
+                        RenderMode.ScreenSpaceOverlay,
+                        RenderMode.ScreenSpaceCamera,
+                        RenderMode.WorldSpace
+                    }));
             Assert.That(
-                platformCanvas.GetComponent<TestRaycaster>(),
-                Is.Not.Null);
-            Assert.That(configurator.ConfigureCount, Is.EqualTo(2));
+                service.UIRoots.All(root => root.transform.parent.parent !=
+                                            service.Root.transform),
+                Is.True);
+        }
 
-            var late = CreateCanvas("Late Canvas", withRaycaster: true);
-            runtime.Update(0f);
-            runtime.Update(0f);
+        [Test]
+        public void Service_DoesNotCreateOrValidateEventSystems()
+        {
+            var first = Track(new GameObject("First", typeof(EventSystem)));
+            var second = Track(new GameObject("Second", typeof(EventSystem)));
+            var template = CreateTemplateWithThreeCanvasModes();
 
-            Assert.That(late.GetComponent<TestRaycaster>(), Is.Not.Null);
+            var service = Track(new PlatformService(template, false));
+
             Assert.That(
-                late.GetComponents<TestRaycaster>(),
-                Has.Length.EqualTo(1));
-            Assert.That(configurator.ConfigureCount, Is.EqualTo(3));
-            yield return null;
-            Assert.That(
-                late.GetComponent<GraphicRaycaster>(),
-                Is.TypeOf<TestRaycaster>());
+                service.Root.GetComponentsInChildren<EventSystem>(true),
+                Is.Empty);
+            Assert.That(first, Is.Not.Null);
+            Assert.That(second, Is.Not.Null);
         }
 
         [UnityTest]
-        public IEnumerator Service_ConfiguresAllCanvasesCreatedByUIRoot()
+        public IEnumerator Service_ConfiguresOnlyPrefabCanvases()
         {
-            var template = CreateTemplate(withEventSystem: false);
+            var template = CreateTemplateWithThreeCanvasModes();
             template.AddComponent<TestRaycasterConfigurator>();
+            var external = CreateCanvas(
+                Track(new GameObject("External")),
+                "External Canvas",
+                RenderMode.ScreenSpaceOverlay,
+                Vector3.zero);
+
             var service = Track(new PlatformService(template, false));
-            var uiRoot = Track(UIRoot.Create(false));
-
-            service.RefreshCanvases();
-
-            foreach (var layer in uiRoot.Layers)
-            {
-                Assert.That(
-                    layer.Root.GetComponent<TestRaycaster>(),
-                    Is.Not.Null,
-                    layer.Layer + " canvas was not configured.");
-            }
-
             yield return null;
+
+            var platformCanvases =
+                service.Root.GetComponentsInChildren<Canvas>(true);
+            Assert.That(
+                platformCanvases.All(
+                    canvas => canvas.GetComponent<TestRaycaster>() != null),
+                Is.True);
+            Assert.That(
+                platformCanvases.All(
+                    canvas => canvas.GetComponents<TestRaycaster>().Length == 1),
+                Is.True);
+            Assert.That(external.GetComponent<TestRaycaster>(), Is.Null);
+            Assert.That(
+                external.GetComponent<GraphicRaycaster>(),
+                Is.TypeOf<GraphicRaycaster>());
+        }
+
+        [Test]
+        public void Service_RejectsInvalidOrDuplicateUIRoots()
+        {
+            var missingId = Track(new GameObject("Missing Id"));
+            CreateUIRoot(missingId.transform, null, Vector3.zero);
+            Assert.Throws<InvalidOperationException>(
+                () => new PlatformService(missingId, false));
+
+            var duplicate = Track(new GameObject("Duplicate"));
+            CreateUIRoot(duplicate.transform, "Same", Vector3.zero);
+            CreateUIRoot(duplicate.transform, "Same", Vector3.zero);
+            Assert.Throws<InvalidOperationException>(
+                () => new PlatformService(duplicate, false));
+        }
+
+        [UnityTest]
+        public IEnumerator UIRoot_BindsNamedPlatformRootsWithoutOwningTransforms()
+        {
+            var template = Track(new GameObject("Platform Template"));
+            CreateUIRoot(template.transform, "Normal", new Vector3(1f, 2f, 3f));
+            CreateUIRoot(template.transform, "Popup", new Vector3(4f, 5f, 6f));
+            CreateUIRoot(template.transform, "WorldPanel", new Vector3(7f, 8f, 9f));
+            var service = Track(new PlatformService(template, false));
+            var root = Track(UIRoot.Create(service));
+
+            Assert.That(root.GetLayerRoot(UILayer.Normal),
+                Is.SameAs(service.GetUIRoot("Normal")));
+            Assert.That(root.GetRoot("WorldPanel"),
+                Is.SameAs(service.GetUIRoot("WorldPanel")));
+
+            var worldRoot = service.GetUIRoot("WorldPanel");
+            worldRoot.anchoredPosition3D = new Vector3(10f, 20f, 30f);
+            yield return null;
+            Assert.That(root.GetRoot("WorldPanel").anchoredPosition3D,
+                Is.EqualTo(new Vector3(10f, 20f, 30f)));
+            Assert.Throws<KeyNotFoundException>(() => root.GetRoot("Missing"));
         }
 
         [Test]
         public void Service_RejectsInvalidPlatformRaycasterType()
         {
-            var template = CreateTemplate(withEventSystem: false);
+            var template = CreateTemplateWithThreeCanvasModes();
             template.AddComponent<InvalidRaycasterConfigurator>();
 
             var exception = Assert.Throws<InvalidOperationException>(
@@ -210,46 +212,76 @@ namespace ArkFramework.Tests
             StringAssert.Contains("BaseRaycaster", exception.Message);
         }
 
-        private GameObject CreateTemplate(bool withEventSystem)
+        private GameObject CreateTemplateWithThreeCanvasModes()
         {
             var template = Track(new GameObject("Platform Template"));
-            var canvas = new GameObject(
-                "Platform Canvas",
-                typeof(RectTransform),
-                typeof(Canvas),
-                typeof(GraphicRaycaster));
-            canvas.transform.SetParent(template.transform, false);
-            if (withEventSystem)
-            {
-                var eventSystem = new GameObject(
-                    "Platform EventSystem",
-                    typeof(EventSystem),
-                    typeof(StandaloneInputModule));
-                eventSystem.transform.SetParent(template.transform, false);
-            }
-
+            var nested = new GameObject("Nested");
+            nested.transform.SetParent(template.transform, false);
+            CreateCanvas(nested, "Overlay", RenderMode.ScreenSpaceOverlay,
+                Vector3.zero);
+            CreateCanvas(nested, "Camera", RenderMode.ScreenSpaceCamera,
+                Vector3.zero);
+            CreateCanvas(nested, "World", RenderMode.WorldSpace,
+                new Vector3(11f, 22f, 33f));
             return template;
         }
 
-        private GameObject CreateCanvas(string name, bool withRaycaster)
+        private static Canvas CreateCanvas(
+            GameObject parent,
+            string id,
+            RenderMode renderMode,
+            Vector3 rootPosition)
         {
-            var canvas = Track(
-                new GameObject(
-                    name,
-                    typeof(RectTransform),
-                    typeof(Canvas)));
-            if (withRaycaster)
+            var canvasObject = new GameObject(
+                id + " Canvas",
+                typeof(RectTransform),
+                typeof(Canvas),
+                typeof(GraphicRaycaster));
+            canvasObject.transform.SetParent(parent.transform, false);
+            var canvas = canvasObject.GetComponent<Canvas>();
+            if (renderMode == RenderMode.ScreenSpaceCamera)
             {
-                canvas.AddComponent<GraphicRaycaster>();
+                var cameraObject = new GameObject(
+                    id + " Camera",
+                    typeof(Camera));
+                cameraObject.transform.SetParent(parent.transform, false);
+                canvas.worldCamera = cameraObject.GetComponent<Camera>();
             }
 
+            canvas.renderMode = renderMode;
+            var group = new GameObject(id + " Group", typeof(RectTransform));
+            group.transform.SetParent(canvasObject.transform, false);
+            CreateUIRoot(group.transform, id, rootPosition);
             return canvas;
+        }
+
+        private static PlatformUIRoot CreateUIRoot(
+            Transform parent,
+            string id,
+            Vector3 localPosition)
+        {
+            var rootObject = new GameObject(
+                (id ?? "Missing") + " UI Root",
+                typeof(RectTransform),
+                typeof(PlatformUIRoot));
+            rootObject.transform.SetParent(parent, false);
+            rootObject.GetComponent<RectTransform>().anchoredPosition3D =
+                localPosition;
+            var root = rootObject.GetComponent<PlatformUIRoot>();
+            UIRootIdField.SetValue(root, id);
+            return root;
         }
 
         private T Track<T>(T value) where T : Object
         {
             _createdObjects.Add(value);
             return value;
+        }
+
+        private UIRoot Track(UIRoot root)
+        {
+            _uiRoots.Add(root);
+            return root;
         }
 
         private PlatformService Track(PlatformService service)
@@ -281,16 +313,7 @@ namespace ArkFramework.Tests
         public sealed class TestRaycasterConfigurator :
             PlatformGraphicRaycasterConfigurator
         {
-            public int ConfigureCount { get; private set; }
-
             public override Type RaycasterType => typeof(TestRaycaster);
-
-            protected override void ConfigureRaycaster(
-                Canvas canvas,
-                BaseRaycaster raycaster)
-            {
-                ConfigureCount++;
-            }
         }
 
         public sealed class InvalidRaycasterConfigurator :

@@ -22,7 +22,7 @@ namespace ArkFramework
 
         public GameObject PlatformPrefab => _platformPrefab;
 
-        public bool DontDestroyOnLoad => _dontDestroyOnLoad;
+        public new bool DontDestroyOnLoad => _dontDestroyOnLoad;
 
         public override string ModuleId => BuiltInModuleIds.Platform;
 
