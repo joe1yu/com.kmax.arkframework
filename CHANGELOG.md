@@ -18,3 +18,5 @@
 - CSV 表支持在任意位置使用 `//` 整行注释，可保留说明或临时禁用数据。
 - EditMode 与 PlayMode 测试迁入 UPM 包的 `Tests` 目录，并通过 Manifest
   `testables` 启用。
+- Sample 集成测试改为随 Complete Sample 导入，避免未导入 Sample 的项目因
+  缺少 `ArkFramework.Samples` 程序集而编译失败。

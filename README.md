@@ -2,7 +2,7 @@
 
 ArkFramework 是面向 Unity 2021.3 的模块化基础框架。包内包含运行时程序集与
 通用 Editor 工具，包 ID 为 `com.kmax.arkframework`。完整 EditMode/PlayMode
-验证测试随包保存在 `Tests` 目录中。
+不依赖 Sample 的验证测试随包保存在 `Tests` 目录中。
 
 ## 安装
 
@@ -39,5 +39,6 @@ ArkFramework 是面向 Unity 2021.3 的模块化基础框架。包内包含运�
 ## 测试
 
 需要运行包内测试时，在目标项目 `Packages/manifest.json` 顶层的 `testables`
-数组中加入 `"com.kmax.arkframework"`。Sample 集成测试还要求先导入
-**Complete Sample**。
+数组中加入 `"com.kmax.arkframework"`。Sample 集成测试保存在
+`Samples~/Complete Sample/Tests`，导入 **Complete Sample** 后才会随示例编译，
+因此未导入 Sample 的项目也可以独立运行核心包测试。

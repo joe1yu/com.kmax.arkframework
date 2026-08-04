@@ -22,10 +22,10 @@ Build Settings。
 
 ## 包测试
 
-EditMode 与 PlayMode 测试位于包内 `Tests` 目录。目标项目需要在
+核心 EditMode 与 PlayMode 测试位于包内 `Tests` 目录。目标项目需要在
 `Packages/manifest.json` 顶层加入
-`"testables": ["com.kmax.arkframework"]` 才会编译并显示包测试。运行 Sample
-集成测试前还需要从 Package Manager 导入 **Complete Sample**。
+`"testables": ["com.kmax.arkframework"]` 才会编译并显示包测试。Sample 集成
+测试位于 `Samples~/Complete Sample/Tests`，仅在导入 **Complete Sample** 后编译。
 
 ## CSV 配表
 

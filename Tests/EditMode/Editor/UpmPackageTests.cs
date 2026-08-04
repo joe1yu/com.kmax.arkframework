@@ -13,7 +13,7 @@ namespace ArkFramework.Editor.Tests
             "Packages/com.kmax.arkframework";
 
         [Test]
-        public void EmbeddedPackage_ResolvesExpectedIdentity()
+        public void Package_ResolvesExpectedIdentity()
         {
             var packageInfo = PackageInfo.FindForAssembly(
                 typeof(FrameworkHost).Assembly);
@@ -21,7 +21,6 @@ namespace ArkFramework.Editor.Tests
             Assert.That(packageInfo, Is.Not.Null);
             Assert.That(packageInfo.name, Is.EqualTo(PackageId));
             Assert.That(packageInfo.version, Is.EqualTo("0.1.0"));
-            Assert.That(packageInfo.source, Is.EqualTo(PackageSource.Embedded));
         }
 
         [Test]
@@ -58,6 +57,16 @@ namespace ArkFramework.Editor.Tests
                 File.Exists(
                     sampleRoot + "/Generated/Scenes/Bootstrap.unity"),
                 Is.True);
+            Assert.That(
+                File.Exists(
+                    sampleRoot +
+                    "/Tests/EditMode/ArkFramework.Samples.EditModeTests.asmdef"),
+                Is.True);
+            Assert.That(
+                File.Exists(
+                    sampleRoot +
+                    "/Tests/PlayMode/ArkFramework.Samples.PlayModeTests.asmdef"),
+                Is.True);
         }
 
         [Test]
@@ -75,6 +84,14 @@ namespace ArkFramework.Editor.Tests
             Assert.That(
                 Directory.Exists("Assets/ArkFramework/Tests"),
                 Is.False);
+            Assert.That(
+                File.Exists(
+                    PackageRoot +
+                    "/Tests/EditMode/Editor/AddressablesSampleBuilderTests.cs"),
+                Is.False);
+            Assert.That(
+                Directory.Exists(PackageRoot + "/Tests/PlayMode/Samples"),
+                Is.False);
             StringAssert.Contains("\"testables\"", projectManifest);
             StringAssert.Contains(
                 "\"" + PackageId + "\"",
@@ -82,16 +99,15 @@ namespace ArkFramework.Editor.Tests
         }
 
         [Test]
-        public void CompleteSample_IsImportedThroughPackageManager()
+        public void CompleteSample_IsDiscoverableThroughPackageManager()
         {
-            var sample = Sample.FindByPackage(PackageId, "0.1.0")
+            var packageInfo = PackageInfo.FindForAssembly(
+                typeof(FrameworkHost).Assembly);
+            var sample = Sample.FindByPackage(PackageId, packageInfo.version)
                 .Single(candidate =>
                     candidate.displayName == "Complete Sample");
 
-            Assert.That(sample.isImported, Is.True);
-            StringAssert.Contains(
-                "Assets/Samples/ArkFramework/0.1.0/Complete Sample",
-                sample.importPath.Replace('\\', '/'));
+            Assert.That(sample.displayName, Is.EqualTo("Complete Sample"));
         }
     }
 }
