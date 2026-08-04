@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using Object = UnityEngine.Object;
 
 namespace ArkFramework
@@ -12,13 +11,10 @@ namespace ArkFramework
     {
         private static readonly IReadOnlyList<PlatformUIRoot> EmptyUIRoots =
             Array.AsReadOnly(Array.Empty<PlatformUIRoot>());
-        private static readonly IReadOnlyList<Canvas> EmptyCanvases =
-            Array.AsReadOnly(Array.Empty<Canvas>());
 
         private readonly Dictionary<string, RectTransform> _uiRoots =
             new Dictionary<string, RectTransform>(StringComparer.Ordinal);
         private IReadOnlyList<PlatformUIRoot> _uiRootValues = EmptyUIRoots;
-        private IReadOnlyList<Canvas> _canvasValues = EmptyCanvases;
         private GameObject _root;
         private bool _disposed;
 
@@ -57,29 +53,6 @@ namespace ArkFramework
             }
         }
 
-        [Obsolete(
-            "仅用于兼容旧版已导入 Sample；平台模块不管理 EventSystem。")]
-        public EventSystem EventSystem
-        {
-            get
-            {
-                EnsureActive();
-                // 只返回预制体已有组件，不创建、不复用也不校验。
-                return _root.GetComponentInChildren<EventSystem>(true);
-            }
-        }
-
-        [Obsolete(
-            "仅用于兼容旧版已导入 Sample；请通过平台预制体自行管理 Canvas。")]
-        public IReadOnlyList<Canvas> Canvases
-        {
-            get
-            {
-                EnsureActive();
-                return _canvasValues;
-            }
-        }
-
         public bool TryGetUIRoot(string id, out RectTransform root)
         {
             EnsureActive();
@@ -114,7 +87,6 @@ namespace ArkFramework
             _disposed = true;
             _uiRoots.Clear();
             _uiRootValues = EmptyUIRoots;
-            _canvasValues = EmptyCanvases;
             DestroyRoot();
             return default;
         }
@@ -177,7 +149,6 @@ namespace ArkFramework
             var configurators = _root.GetComponentsInChildren<
                 PlatformGraphicRaycasterConfigurator>(true);
             var canvases = _root.GetComponentsInChildren<Canvas>(true);
-            _canvasValues = new ReadOnlyCollection<Canvas>(canvases);
             for (var index = 0; index < configurators.Length; index++)
             {
                 var configurator = configurators[index];
